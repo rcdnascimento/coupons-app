@@ -1,0 +1,29 @@
+package com.coupons.bff.resource;
+
+import com.coupons.bff.infra.gateway.prizes.PrizesGateway;
+import com.coupons.bff.infra.resource.dto.PrizeDeliveryResponse;
+import java.util.List;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/prizes")
+public class PrizesProxyResource {
+
+    private final PrizesGateway prizesGateway;
+
+    public PrizesProxyResource(PrizesGateway prizesGateway) {
+        this.prizesGateway = prizesGateway;
+    }
+
+    @GetMapping(value = "/users/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<PrizeDeliveryResponse>> byUser(
+            @PathVariable String userId, @RequestParam(required = false) String campaignId) {
+        return ResponseEntity.ok(prizesGateway.prizesByUser(userId, campaignId));
+    }
+}

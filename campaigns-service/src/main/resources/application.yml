@@ -1,0 +1,56 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: campaigns-service
+  datasource:
+    url: jdbc:mysql://localhost:3307/campaigns?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    username: campaigns_svc
+    password: ${CAMPAIGNS_DB_PASSWORD:campaigns_dev_change_me}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_CAMPAIGNS:campaigns-service}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+coupons:
+  services:
+    prizes-url: ${PRIZES_SERVICE_URL:http://localhost:8085}
+  kafka:
+    consumer-group: ${KAFKA_CONSUMER_GROUP_CAMPAIGNS:campaigns-service}
+    topic-prize-distribution-request: ${KAFKA_TOPIC_PRIZE_DISTRIBUTION_REQUEST:prize.distribution.request}
+    topic-campaign-subscription-debit-request: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST:campaign.subscription.debit.request}
+    topic-campaign-subscription-payment-succeeded: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED:campaign.subscription.payment.succeeded}
+    topic-campaign-subscription-payment-failed: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED:campaign.subscription.payment.failed}
+  outbox:
+    publish-delay-ms: ${OUTBOX_PUBLISH_DELAY_MS:3000}
+  distribution:
+    poll-ms: ${DISTRIBUTION_POLL_MS:5000}
+    retry-poll-ms: ${DISTRIBUTION_RETRY_POLL_MS:5000}
+    delivery-confirmation-wait-ms: ${DISTRIBUTION_DELIVERY_CONFIRMATION_WAIT_MS:15000}
+    max-dispatch-attempts: ${DISTRIBUTION_MAX_DISPATCH_ATTEMPTS:10}
+    retry-batch-size: ${DISTRIBUTION_RETRY_BATCH_SIZE:200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+

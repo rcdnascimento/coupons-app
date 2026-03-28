@@ -1,0 +1,602 @@
+{
+  "info": {
+    "name": "Coupons (Auth/Profile/Campaigns/Ledger/Prizes) + BFF",
+    "_postman_id": "00000000-0000-0000-0000-000000000000",
+    "description": "Collection para testar os REST dos microsserviços e do BFF.\n\nContrato:\n- Corpos e respostas são JSON tipado (campos como nos DTOs Java).\n- Erros: objeto `{ \"error\": \"mensagem\" }` (auth, profile, ledger, campaigns, BFF).\n- BFF (`/api/*`): valida o body com as mesmas regras que os serviços; encaminha para auth/campaigns/prizes.\n- `POST .../subscriptions` (campaigns ou BFF) responde **204 No Content** sem body em sucesso.\n- UUIDs em JSON vão entre aspas (string).\n\nSugestão: após `register`/`login`, copiar `userId` / `token` da resposta para as variáveis da collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "protocol", "value": "http" },
+    { "key": "authHost", "value": "localhost" },
+    { "key": "authPort", "value": "8081" },
+    { "key": "profileHost", "value": "localhost" },
+    { "key": "profilePort", "value": "8082" },
+    { "key": "campaignsHost", "value": "localhost" },
+    { "key": "campaignsPort", "value": "8083" },
+    { "key": "ledgerHost", "value": "localhost" },
+    { "key": "ledgerPort", "value": "8084" },
+    { "key": "prizesHost", "value": "localhost" },
+    { "key": "prizesPort", "value": "8085" },
+    { "key": "bffHost", "value": "localhost" },
+    { "key": "bffPort", "value": "8090" },
+    { "key": "userId", "value": "11111111-1111-1111-1111-111111111111" },
+    { "key": "campaignId", "value": "22222222-2222-2222-2222-222222222222" },
+    { "key": "accessToken", "value": "" },
+    { "key": "couponCode", "value": "CUPOM-POSTMAN-001" },
+    { "key": "couponPriority", "value": "1" },
+    { "key": "email", "value": "user1@example.com" },
+    { "key": "password", "value": "Password123" },
+    { "key": "name", "value": "User One" },
+    { "key": "reason", "value": "POSTMAN_SEED" },
+    { "key": "refType", "value": "TEST" },
+    { "key": "refId", "value": "seed-1" },
+    { "key": "idempotencyKey", "value": "seed-credit-11111111-1111-1111-1111-111111111111" },
+    { "key": "subsStartAt", "value": "2026-06-01T00:00:00Z" },
+    { "key": "subsEndAt", "value": "2026-12-31T23:59:59Z" },
+    { "key": "distributionAt", "value": "2027-01-15T12:00:00Z" },
+    { "key": "couponExpiresAt", "value": "2027-06-01T00:00:00Z" }
+  ],
+  "item": [
+    {
+      "name": "Actuator / health (por servico)",
+      "item": [
+        {
+          "name": "Auth - GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{authHost}}:{{authPort}}/actuator/health",
+              "protocol": "{{protocol}}",
+              "host": ["{{authHost}}"],
+              "port": "{{authPort}}",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Profile - GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{profileHost}}:{{profilePort}}/actuator/health",
+              "protocol": "{{protocol}}",
+              "host": ["{{profileHost}}"],
+              "port": "{{profilePort}}",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Campaigns - GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{campaignsHost}}:{{campaignsPort}}/actuator/health",
+              "protocol": "{{protocol}}",
+              "host": ["{{campaignsHost}}"],
+              "port": "{{campaignsPort}}",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Ledger - GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{ledgerHost}}:{{ledgerPort}}/actuator/health",
+              "protocol": "{{protocol}}",
+              "host": ["{{ledgerHost}}"],
+              "port": "{{ledgerPort}}",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Prizes - GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{prizesHost}}:{{prizesPort}}/actuator/health",
+              "protocol": "{{protocol}}",
+              "host": ["{{prizesHost}}"],
+              "port": "{{prizesPort}}",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "BFF - GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/actuator/health",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["actuator", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth service",
+      "item": [
+        {
+          "name": "POST /v1/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"{{name}}\",\n  \"referralCode\": null\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{authHost}}:{{authPort}}/v1/auth/register",
+              "protocol": "{{protocol}}",
+              "host": ["{{authHost}}"],
+              "port": "{{authPort}}",
+              "path": ["v1", "auth", "register"]
+            },
+            "description": "Resposta 201: `{ token, userId, email, name }`. Opcional: omitir `referralCode` em vez de `null`."
+          }
+        },
+        {
+          "name": "POST /v1/auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{authHost}}:{{authPort}}/v1/auth/login",
+              "protocol": "{{protocol}}",
+              "host": ["{{authHost}}"],
+              "port": "{{authPort}}",
+              "path": ["v1", "auth", "login"]
+            },
+            "description": "Resposta 200: mesmo formato que register."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile service",
+      "item": [
+        {
+          "name": "POST /v1/profiles",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"displayName\": \"{{name}}\",\n  \"timezone\": \"America/Sao_Paulo\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{profileHost}}:{{profilePort}}/v1/profiles",
+              "protocol": "{{protocol}}",
+              "host": ["{{profileHost}}"],
+              "port": "{{profilePort}}",
+              "path": ["v1", "profiles"]
+            },
+            "description": "Resposta 201: `{ userId, displayName, referralCode, timezone, createdAt }`."
+          }
+        },
+        {
+          "name": "GET /v1/profiles/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{profileHost}}:{{profilePort}}/v1/profiles/{{userId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{profileHost}}"],
+              "port": "{{profilePort}}",
+              "path": ["v1", "profiles", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /v1/profiles/{userId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"{{name}}\",\n  \"timezone\": \"America/Sao_Paulo\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{profileHost}}:{{profilePort}}/v1/profiles/{{userId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{profileHost}}"],
+              "port": "{{profilePort}}",
+              "path": ["v1", "profiles", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Campaigns service",
+      "item": [
+        {
+          "name": "POST /v1/campaigns",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Campanha Postman\",\n  \"subscriptionsStartAt\": \"{{subsStartAt}}\",\n  \"subscriptionsEndAt\": \"{{subsEndAt}}\",\n  \"distributionAt\": \"{{distributionAt}}\",\n  \"pointsCost\": 100\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{campaignsHost}}:{{campaignsPort}}/v1/campaigns",
+              "protocol": "{{protocol}}",
+              "host": ["{{campaignsHost}}"],
+              "port": "{{campaignsPort}}",
+              "path": ["v1", "campaigns"]
+            },
+            "description": "Ajuste `subsStartAt`, `subsEndAt`, `distributionAt` na collection se a regra de negócio exigir datas diferentes."
+          }
+        },
+        {
+          "name": "GET /v1/campaigns",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{campaignsHost}}:{{campaignsPort}}/v1/campaigns",
+              "protocol": "{{protocol}}",
+              "host": ["{{campaignsHost}}"],
+              "port": "{{campaignsPort}}",
+              "path": ["v1", "campaigns"]
+            }
+          }
+        },
+        {
+          "name": "POST /v1/campaigns/{campaignId}/coupons",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"expiresAt\": \"{{couponExpiresAt}}\",\n  \"priority\": {{couponPriority}}\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{campaignsHost}}:{{campaignsPort}}/v1/campaigns/{{campaignId}}/coupons",
+              "protocol": "{{protocol}}",
+              "host": ["{{campaignsHost}}"],
+              "port": "{{campaignsPort}}",
+              "path": ["v1", "campaigns", "{{campaignId}}", "coupons"]
+            }
+          }
+        },
+        {
+          "name": "POST /v1/campaigns/{campaignId}/subscriptions (204)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{campaignsHost}}:{{campaignsPort}}/v1/campaigns/{{campaignId}}/subscriptions",
+              "protocol": "{{protocol}}",
+              "host": ["{{campaignsHost}}"],
+              "port": "{{campaignsPort}}",
+              "path": ["v1", "campaigns", "{{campaignId}}", "subscriptions"]
+            },
+            "description": "Sucesso: HTTP 204 sem corpo."
+          }
+        },
+        {
+          "name": "POST /v1/campaigns/{campaignId}/allocations",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{campaignsHost}}:{{campaignsPort}}/v1/campaigns/{{campaignId}}/allocations",
+              "protocol": "{{protocol}}",
+              "host": ["{{campaignsHost}}"],
+              "port": "{{campaignsPort}}",
+              "path": ["v1", "campaigns", "{{campaignId}}", "allocations"]
+            },
+            "description": "Alocação de cupom ao utilizador (fluxo interno / testes)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ledger service",
+      "item": [
+        {
+          "name": "POST /v1/ledger/credit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"amount\": 200,\n  \"reason\": \"{{reason}}\",\n  \"refType\": \"{{refType}}\",\n  \"refId\": \"{{refId}}\",\n  \"idempotencyKey\": \"{{idempotencyKey}}\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{ledgerHost}}:{{ledgerPort}}/v1/ledger/credit",
+              "protocol": "{{protocol}}",
+              "host": ["{{ledgerHost}}"],
+              "port": "{{ledgerPort}}",
+              "path": ["v1", "ledger", "credit"]
+            },
+            "description": "Resposta 201: corpo com entrada do ledger (id, userId, amount, …)."
+          }
+        },
+        {
+          "name": "POST /v1/ledger/debit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"amount\": 50,\n  \"reason\": \"{{reason}}\",\n  \"refType\": \"{{refType}}\",\n  \"refId\": \"{{refId}}\",\n  \"idempotencyKey\": \"{{idempotencyKey}}-debit\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{ledgerHost}}:{{ledgerPort}}/v1/ledger/debit",
+              "protocol": "{{protocol}}",
+              "host": ["{{ledgerHost}}"],
+              "port": "{{ledgerPort}}",
+              "path": ["v1", "ledger", "debit"]
+            }
+          }
+        },
+        {
+          "name": "GET /v1/ledger/balance/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{ledgerHost}}:{{ledgerPort}}/v1/ledger/balance/{{userId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{ledgerHost}}"],
+              "port": "{{ledgerPort}}",
+              "path": ["v1", "ledger", "balance", "{{userId}}"]
+            },
+            "description": "Resposta: `{ userId, balance }` (nomes alinhados ao DTO do serviço)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prizes service",
+      "item": [
+        {
+          "name": "GET /v1/prizes/users/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{prizesHost}}:{{prizesPort}}/v1/prizes/users/{{userId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{prizesHost}}"],
+              "port": "{{prizesPort}}",
+              "path": ["v1", "prizes", "users", "{{userId}}"]
+            },
+            "description": "Lista todas as entregas do utilizador."
+          }
+        },
+        {
+          "name": "GET /v1/prizes/users/{userId}?campaignId=",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{prizesHost}}:{{prizesPort}}/v1/prizes/users/{{userId}}?campaignId={{campaignId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{prizesHost}}"],
+              "port": "{{prizesPort}}",
+              "path": ["v1", "prizes", "users", "{{userId}}"],
+              "query": [{ "key": "campaignId", "value": "{{campaignId}}" }]
+            },
+            "description": "Filtra por campanha."
+          }
+        }
+      ]
+    },
+    {
+      "name": "BFF service (/api/*)",
+      "item": [
+        {
+          "name": "POST /api/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"{{name}}\",\n  \"referralCode\": null\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/auth/register",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Proxy tipado para auth. Resposta 201 com `token`, `userId`, `email`, `name`."
+          }
+        },
+        {
+          "name": "POST /api/auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/auth/login",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/campaigns",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Campanha Postman (via BFF)\",\n  \"subscriptionsStartAt\": \"{{subsStartAt}}\",\n  \"subscriptionsEndAt\": \"{{subsEndAt}}\",\n  \"distributionAt\": \"{{distributionAt}}\",\n  \"pointsCost\": 100\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/campaigns",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "campaigns"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/campaigns",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/campaigns",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "campaigns"]
+            },
+            "description": "Lista JSON (array de campanhas)."
+          }
+        },
+        {
+          "name": "POST /api/campaigns/{campaignId}/coupons",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"expiresAt\": \"{{couponExpiresAt}}\",\n  \"priority\": {{couponPriority}}\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/campaigns/{{campaignId}}/coupons",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "campaigns", "{{campaignId}}", "coupons"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/campaigns/{campaignId}/subscriptions (204)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/campaigns/{{campaignId}}/subscriptions",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "campaigns", "{{campaignId}}", "subscriptions"]
+            },
+            "description": "Sucesso: HTTP 204 sem corpo. Erros upstream: `{ \"error\": \"...\" }` com o código HTTP correspondente."
+          }
+        },
+        {
+          "name": "GET /api/prizes/users/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/prizes/users/{{userId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "prizes", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/prizes/users/{userId}?campaignId=",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{protocol}}://{{bffHost}}:{{bffPort}}/api/prizes/users/{{userId}}?campaignId={{campaignId}}",
+              "protocol": "{{protocol}}",
+              "host": ["{{bffHost}}"],
+              "port": "{{bffPort}}",
+              "path": ["api", "prizes", "users", "{{userId}}"],
+              "query": [{ "key": "campaignId", "value": "{{campaignId}}" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

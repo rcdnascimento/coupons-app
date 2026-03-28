@@ -1,0 +1,70 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: coupons-mysql
+    restart: unless-stopped
+    command:
+      - "--authentication_policy=mysql_native_password,,"
+      - --innodb-use-native-aio=0
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth_dev_change_me}
+      PROFILE_DB_PASSWORD: ${PROFILE_DB_PASSWORD:-profile_dev_change_me}
+      CAMPAIGNS_DB_PASSWORD: ${CAMPAIGNS_DB_PASSWORD:-campaigns_dev_change_me}
+      LEDGER_DB_PASSWORD: ${LEDGER_DB_PASSWORD:-ledger_dev_change_me}
+      PRIZES_DB_PASSWORD: ${PRIZES_DB_PASSWORD:-prizes_dev_change_me}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: coupons-zookeeper
+    restart: unless-stopped
+    ports:
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: coupons-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9092}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: coupons-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    ports:
+      - "${KAFKA_UI_PORT:-8088}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: coupons-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+volumes:
+  mysql_data:
+
+networks:
+  default:
+    name: coupons-net

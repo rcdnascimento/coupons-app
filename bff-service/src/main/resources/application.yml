@@ -1,0 +1,25 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: bff-service
+
+# URLs dos outros microsserviços (cada um é processo/JAR separado)
+coupons:
+  services:
+    auth-url: http://localhost:8081
+    profile-url: http://localhost:8082
+    campaigns-url: http://localhost:8083
+    ledger-url: http://localhost:8084
+    prizes-url: http://localhost:8085
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+

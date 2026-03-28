@@ -1,0 +1,36 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:mysql://localhost:3307/auth?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    username: auth_svc
+    password: ${AUTH_DB_PASSWORD:auth_dev_change_me}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
+  expiration-hours: ${JWT_EXPIRATION_HOURS:24}
+
+coupons:
+  services:
+    profile-url: ${PROFILE_SERVICE_URL:http://localhost:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
