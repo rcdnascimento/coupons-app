@@ -58,7 +58,7 @@ export default function CampaignWinnersPage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
-          <p className="campaign-detail__empty">Nao foi possivel carregar as campanhas.</p>
+          <p className="campaign-detail__empty">Não foi possível carregar as campanhas.</p>
         </div>
       </main>
     );
@@ -84,7 +84,7 @@ export default function CampaignWinnersPage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
-          <p className="campaign-detail__empty">Campanha nao encontrada.</p>
+          <p className="campaign-detail__empty">Campanha não encontrada.</p>
         </div>
       </main>
     );
@@ -119,7 +119,7 @@ export default function CampaignWinnersPage() {
           {winners === undefined && !winnersError ? (
             <p className="muted">...</p>
           ) : winnersError ? (
-            <p className="muted">Nao foi possivel carregar a lista de vencedores.</p>
+            <p className="muted">Não foi possível carregar a lista de vencedores.</p>
           ) : !winners?.entries?.length ? (
             <p className="muted">Nenhum vencedor divulgado ainda.</p>
           ) : (
@@ -128,7 +128,7 @@ export default function CampaignWinnersPage() {
                 <li key={`${w.rank}-${w.userId}`} className="campaign-detail__winner-row">
                   <span className="campaign-detail__winner-rank muted">{w.rank}.</span>
                   <div className="campaign-detail__winner-main">
-                    <span className="campaign-detail__winner-name">{w.winnerDisplayName || "Nome indisponivel"}</span>
+                    <span className="campaign-detail__winner-name">{w.winnerDisplayName || "Nome indisponível"}</span>
                     <span className="campaign-detail__winner-prize">{w.couponTitle}</span>
                   </div>
                 </li>

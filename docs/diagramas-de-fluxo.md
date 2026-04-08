@@ -173,7 +173,7 @@ sequenceDiagram
   participant PR as prizes-service consumer
   participant U as Usuário
 
-  Note over SCH: @Scheduled — campanhas ACTIVE com distributionAt vencido
+  Note over SCH: uled — campanhas ACTIVE com distributionAt vencido
   SCH->>CAS: allocate(campaignId, userId) por subscrição ACTIVE
   CAS->>CAS: CampaignAllocation + cupom ASSIGNED (transação REQUIRES_NEW)
   CAS->>K: prize.distribution.request

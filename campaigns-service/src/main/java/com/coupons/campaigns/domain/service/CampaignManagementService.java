@@ -24,6 +24,9 @@ public class CampaignManagementService {
     public Campaign createCampaign(Campaign campaign) {
         validateTimeline(campaign);
         campaign.setTitle(campaign.getTitle().trim());
+        if (campaign.getDescription() != null) {
+            campaign.setDescription(campaign.getDescription().trim());
+        }
         campaign.setStatus(CampaignStatus.ACTIVE);
         return campaignRepository.save(campaign);
     }
@@ -39,6 +42,9 @@ public class CampaignManagementService {
         if (patch.getTitle() != null) {
             campaign.setTitle(patch.getTitle().trim());
         }
+        if (patch.getDescription() != null) {
+            campaign.setDescription(patch.getDescription().trim());
+        }
         if (patch.getSubscriptionsStartAt() != null) {
             campaign.setSubscriptionsStartAt(patch.getSubscriptionsStartAt());
         }
@@ -47,6 +53,11 @@ public class CampaignManagementService {
         }
         if (patch.getDistributionAt() != null) {
             campaign.setDistributionAt(patch.getDistributionAt());
+        }
+        if (Boolean.TRUE.equals(patch.getClearVisibleUntil())) {
+            campaign.setVisibleUntil(null);
+        } else if (patch.getVisibleUntil() != null) {
+            campaign.setVisibleUntil(patch.getVisibleUntil());
         }
         if (patch.getPointsCost() != null) {
             campaign.setPointsCost(patch.getPointsCost());
@@ -60,7 +71,7 @@ public class CampaignManagementService {
 
     @Transactional(readOnly = true)
     public List<Campaign> listCampaigns() {
-        return campaignRepository.findAll();
+        return campaignRepository.findAllForListOrderByActiveAndDistribution();
     }
 
     private void validateTimeline(Campaign campaign) {

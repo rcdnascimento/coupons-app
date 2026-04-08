@@ -17,9 +17,11 @@ public class CampaignRestMapper {
     public Campaign toCampaign(CreateCampaignRequest request) {
         Campaign campaign = new Campaign();
         campaign.setTitle(request.getTitle().trim());
+        campaign.setDescription(request.getDescription().trim());
         campaign.setSubscriptionsStartAt(request.getSubscriptionsStartAt());
         campaign.setSubscriptionsEndAt(request.getSubscriptionsEndAt());
         campaign.setDistributionAt(request.getDistributionAt());
+        campaign.setVisibleUntil(request.getVisibleUntil());
         campaign.setPointsCost(request.getPointsCost());
         return campaign;
     }

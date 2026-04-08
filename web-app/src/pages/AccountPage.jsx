@@ -41,14 +41,14 @@ export default function AccountPage() {
 
   async function shareReferralLink() {
     if (!referralLink) {
-      notifyError("Codigo de indicacao indisponivel no momento.");
+      notifyError("Código de indicação indisponível no momento.");
       return;
     }
     try {
       if (navigator.share) {
         await navigator.share({
           title: "Coupons",
-          text: "Use meu codigo de indicacao no Coupons!",
+          text: "Use meu código de indicação no Coupons!",
           url: referralLink
         });
       } else {
@@ -70,13 +70,13 @@ export default function AccountPage() {
         <p className="muted">{auth.email}</p>
         <p className="muted account-page__balance">
           Pontos atuais:{" "}
-          {loading ? "..." : balance != null ? balance : "indisponivel"}
+          {loading ? "..." : balance != null ? balance : "indisponível"}
         </p>
       </section>
 
       <section className="account-page__section account-page__actions">
         <button type="button" className="primary" onClick={shareReferralLink} disabled={!referralLink}>
-          Compartilhar link de indicacao
+          Compartilhar link de indicação
         </button>
         <button type="button" className="ghost" onClick={onLogout}>
           Sair

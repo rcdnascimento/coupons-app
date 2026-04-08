@@ -7,9 +7,11 @@ public class CampaignResponse {
 
     private UUID id;
     private String title;
+    private String description;
     private Instant subscriptionsStartAt;
     private Instant subscriptionsEndAt;
     private Instant distributionAt;
+    private Instant visibleUntil;
     private CampaignStatus status;
     private int pointsCost;
     private Instant createdAt;
@@ -29,6 +31,14 @@ public class CampaignResponse {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Instant getSubscriptionsStartAt() {
@@ -53,6 +63,14 @@ public class CampaignResponse {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public Instant getVisibleUntil() {
+        return visibleUntil;
+    }
+
+    public void setVisibleUntil(Instant visibleUntil) {
+        this.visibleUntil = visibleUntil;
     }
 
     public CampaignStatus getStatus() {

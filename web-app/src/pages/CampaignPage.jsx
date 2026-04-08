@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCampaignSummary, listCampaigns } from "../api";
 import {
-  campaignEntryCostLabel,
-  campaignStateBadgeLabel,
+  campaignCardDescriptionText,
+  campaignPointsCornerLabel,
   countdownLabel,
   distributionScheduleLabel,
   getCampaignState
@@ -63,7 +63,7 @@ export default function CampaignPage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
-          <p className="campaign-detail__empty">Nao foi possivel carregar as campanhas.</p>
+          <p className="campaign-detail__empty">Não foi possível carregar as campanhas.</p>
         </div>
       </main>
     );
@@ -89,7 +89,7 @@ export default function CampaignPage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
-          <p className="campaign-detail__empty">Campanha nao encontrada.</p>
+          <p className="campaign-detail__empty">Campanha não encontrada.</p>
         </div>
       </main>
     );
@@ -97,6 +97,7 @@ export default function CampaignPage() {
 
   const campaignState = getCampaignState(campaign);
   const closed = campaignState === "fechada";
+  const cost = Math.max(0, Math.floor(Number(campaign.pointsCost) || 0));
 
   return (
     <main className="page campaign-page">
@@ -119,23 +120,32 @@ export default function CampaignPage() {
             </svg>
           </Link>
           <div className="campaign-card__top campaign-detail__meta">
-            <p className={`badge badge--campaign-state ${campaignState}`}>
-              {campaignStateBadgeLabel(campaignState, campaign)}
-            </p>
+            <div className="campaign-card__top-row">
+              <div className="campaign-card__top-left">
+                {campaignState === "fechada" && (
+                  <p className={`badge badge--campaign-state ${campaignState}`}>Finalizada</p>
+                )}
+              </div>
+              <span className="campaign-card__coins" title="Custo de entrada na campanha">
+                {campaignPointsCornerLabel(cost)}
+              </span>
+            </div>
             {campaignState === "aberta" && (
-              <span className="campaign-card__time">{countdownLabel(campaign.distributionAt)}</span>
+              <p className="campaign-card__countdown-line" aria-live="polite">
+                {countdownLabel(campaign.distributionAt)}
+              </p>
             )}
           </div>
         </div>
 
         <h2 className="campaign-detail__title">{campaign.title}</h2>
-        <p className="muted campaign-detail__cost">{campaignEntryCostLabel(campaign.pointsCost)}</p>
+        <p className="muted campaign-card__description">{campaignCardDescriptionText(campaign.description)}</p>
         {!closed && (
           <p className="muted campaign-detail__date">{distributionScheduleLabel(campaign.distributionAt)}</p>
         )}
 
         <div className="campaign-detail__prizes">
-          <h3 className="campaign-detail__prizes-heading">Premios possiveis</h3>
+          <h3 className="campaign-detail__prizes-heading">Prêmios possíveis</h3>
           {!summary?.possiblePrizes?.length ? (
             <p className="muted">...</p>
           ) : (

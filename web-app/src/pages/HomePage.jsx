@@ -1,19 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import {
+  getCampaign,
   getMeBalance,
   getMeProfile,
   getMyCampaignSubscriptionStatus,
   listCampaigns,
+  listPrizesByUser,
   subscribeCampaign
 } from "../api";
 import { useNotification } from "../context/NotificationProvider";
 import {
-  campaignEntryCostLabel,
-  countdownLabel,
-  distributionScheduleLabel,
+  campaignCardDescriptionText,
+  campaignPointsCornerLabel,
   campaignStateBadgeLabel,
+  distributionRedemptionInRoughLabel,
   getCampaignState,
+  isCampaignVisibleInList,
+  isCampaignClosed,
+  isDistributionDrawAnimationPhase,
+  isDistributionTimeReached,
+  sleep,
   sortCampaigns
 } from "../utils";
 import "./HomePage.css";
@@ -21,8 +28,219 @@ import "./HomePage.css";
 const POLL_INTERVAL_MS = 1500;
 const POLL_MAX_MS = 90_000;
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+const DIST_DRAW_MIN_MS = 10_000;
+const DIST_POLL_MS = 2_000;
+const DIST_POLL_MAX_MS = 120_000;
+
+const DIST_DRAW_MESSAGES = [
+  "Os cupons estão entrando na disputa…",
+  "Preparando o sorteio… quem será o escolhido?",
+  "Tem muita gente na disputa…",
+  "Será que é você?",
+  "Tem um vencedor se aproximando…",
+  "Segura aí… estamos quase descobrindo!"
+];
+
+const DIST_POLL_MESSAGES = [
+  "Ainda há um véu sobre o desfecho...",
+  "Quase. O enigma está prestes a se abrir.",
+  "Só mais um instante até a revelação."
+];
+
+function CampaignSubscribedDistributionBlock({
+  campaign,
+  userId,
+  navigate,
+  onSettled,
+  onAnimationFocusChange
+}) {
+  const campaignId = campaign.id;
+  /** Recalculado a cada render do pai (ex.: tick 1s) — sem useMemo para `Date.now()` não ficar “preso”. */
+  const distStarted = isDistributionTimeReached(campaign);
+  const inAnimationPhase = isDistributionDrawAnimationPhase(campaign, Date.now());
+
+  const [ui, setUi] = useState("registered");
+  const [won, setWon] = useState(null);
+  const [lineIndex, setLineIndex] = useState(0);
+  const runSerialRef = useRef(0);
+  const onSettledRef = useRef(onSettled);
+  onSettledRef.current = onSettled;
+  const onAnimFocusRef = useRef(onAnimationFocusChange);
+  onAnimFocusRef.current = onAnimationFocusChange;
+
+  /** Card só com animação: dentro da janela (15s pós-dist ou campanha ainda não fechada) e antes do resultado. */
+  const animationFullCard = inAnimationPhase && ui !== "result";
+
+  useEffect(() => {
+    onAnimFocusRef.current?.(campaignId, animationFullCard);
+    return () => {
+      onAnimFocusRef.current?.(campaignId, false);
+    };
+  }, [campaignId, animationFullCard]);
+
+  /* Deps só distStarted / campaignId / userId: incluir tick ou status reiniciava o fluxo a cada segundo e causava flash. */
+  useEffect(() => {
+    if (!distStarted) {
+      runSerialRef.current += 1;
+      setUi("registered");
+      setWon(null);
+      setLineIndex(0);
+      return;
+    }
+
+    let cancelled = false;
+    const serial = ++runSerialRef.current;
+    const runWithAnimation = isDistributionDrawAnimationPhase(campaign, Date.now());
+
+    if (runWithAnimation) {
+      setUi("drawing");
+    }
+    setWon(null);
+
+    (async () => {
+      if (runWithAnimation) {
+        await sleep(DIST_DRAW_MIN_MS);
+        if (cancelled || serial !== runSerialRef.current) return;
+      }
+
+      const deadline = Date.now() + DIST_POLL_MAX_MS;
+      let last = null;
+      while (Date.now() < deadline && !cancelled && serial === runSerialRef.current) {
+        try {
+          last = await getCampaign(campaignId, { silent: true });
+        } catch {
+          await sleep(DIST_POLL_MS);
+          continue;
+        }
+        if (isCampaignClosed(last)) break;
+        if (isDistributionDrawAnimationPhase(last, Date.now())) {
+          setUi("polling");
+        }
+        await sleep(DIST_POLL_MS);
+      }
+
+      if (cancelled || serial !== runSerialRef.current) return;
+
+      if (!last || !isCampaignClosed(last)) {
+        setWon(false);
+        setUi("result");
+        onSettledRef.current?.();
+        return;
+      }
+
+      try {
+        const prizes = await listPrizesByUser(userId, campaignId, { silent: true });
+        const arr = Array.isArray(prizes) ? prizes : [];
+        setWon(arr.some((p) => String(p.campaignId) === String(campaignId)));
+      } catch {
+        setWon(false);
+      }
+      setUi("result");
+      onSettledRef.current?.();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [distStarted, campaignId, userId]);
+
+  useEffect(() => {
+    if (ui !== "drawing" && ui !== "polling" && ui !== "registered") return;
+    if (!inAnimationPhase) return;
+    const msgs =
+      ui === "polling" ? DIST_POLL_MESSAGES : DIST_DRAW_MESSAGES;
+    if (msgs.length <= 1) return;
+    const t = setInterval(() => setLineIndex((i) => i + 1), 2800);
+    return () => clearInterval(t);
+  }, [ui, inAnimationPhase]);
+
+  useEffect(() => {
+    setLineIndex(0);
+  }, [ui]);
+
+  if (!distStarted) {
+    return <p className="ok">Inscrição confirmada</p>;
+  }
+
+  if (ui === "result") {
+    return (
+      <div className="distribution-result">
+        <p
+          className={
+            won
+              ? "distribution-result__title distribution-result__title--won"
+              : "distribution-result__title distribution-result__title--lost"
+          }
+        >
+          {won
+            ? "Parabéns! Você ganhou!"
+            : "Não foi dessa vez. Tente novamente na próxima campanha!"}
+        </p>
+        <div className="distribution-result__actions">
+          {won && (
+            <button
+              type="button"
+              className="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/premios?campaignId=${encodeURIComponent(campaignId)}`);
+              }}
+            >
+              Ver prêmio
+            </button>
+          )}
+          <button
+            type="button"
+            className={won ? "secondary" : "primary"}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/campanhas/${campaignId}/vencedores`);
+            }}
+          >
+            Ver vencedores
+          </button>
+          {!won && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/campanhas/${campaignId}`);
+              }}
+            >
+              Ver detalhes
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const showDraw =
+    ui === "drawing" ||
+    ui === "polling" ||
+    (inAnimationPhase && distStarted && ui === "registered");
+  if (!showDraw) {
+    return <p className="ok">Inscrição confirmada</p>;
+  }
+
+  const msgs = ui === "polling" ? DIST_POLL_MESSAGES : DIST_DRAW_MESSAGES;
+  const msgIndex = lineIndex % msgs.length;
+  const msgKey = `${ui}-${msgIndex}`;
+  return (
+    <div className="distribution-draw" role="status" aria-live="polite">
+      <div className="distribution-draw__visual" aria-hidden={true}>
+        <span className="distribution-draw__orb distribution-draw__orb--a" />
+        <span className="distribution-draw__orb distribution-draw__orb--b" />
+        <span className="distribution-draw__orb distribution-draw__orb--c" />
+      </div>
+      <p className="distribution-draw__msg">
+        <span className="distribution-draw__msg-inner" key={msgKey}>
+          {msgs[msgIndex]}
+        </span>
+      </p>
+    </div>
+  );
 }
 
 function pointsCostNumber(c) {
@@ -33,6 +251,7 @@ export default function HomePage() {
   const { auth, subscriptions, onSubscribe, replaceSubscriptions, onLogout } = useOutletContext();
   const { notifyError } = useNotification();
   const navigate = useNavigate();
+  const [distributionAnimFocus, setDistributionAnimFocus] = useState({});
   const [campaigns, setCampaigns] = useState([]);
   const [balance, setBalance] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -83,7 +302,9 @@ export default function HomePage() {
             return;
           }
         }
-        notifyError("Nao foi possivel confirmar a inscricao a tempo. Atualize a pagina ou tente mais tarde.");
+        notifyError(
+          "Não foi possível confirmar a inscrição a tempo. Atualize a página ou tente mais tarde."
+        );
       } finally {
         pollingCampaignsRef.current.delete(campaignId);
         setCampaignProcessing(campaignId, false);
@@ -99,7 +320,7 @@ export default function HomePage() {
         listCampaigns(),
         getMeBalance(auth.userId).catch(() => null)
       ]);
-      const sorted = sortCampaigns(camps);
+      const sorted = sortCampaigns(camps).filter((c) => isCampaignVisibleInList(c));
       setCampaigns(sorted);
       setBalance(bal?.balance ?? null);
       const profileOut = await getMeProfile({
@@ -142,6 +363,15 @@ export default function HomePage() {
     loadData();
   }, [auth.userId]);
 
+  const onDistributionAnimationFocus = useCallback((campaignId, active) => {
+    setDistributionAnimFocus((prev) => {
+      const next = { ...prev };
+      if (active) next[campaignId] = true;
+      else delete next[campaignId];
+      return next;
+    });
+  }, []);
+
   const referralLink = useMemo(() => {
     const code = profile?.referralCode || auth?.referralCode;
     if (!code) return "";
@@ -167,14 +397,14 @@ export default function HomePage() {
 
   async function shareReferralLink() {
     if (!referralLink) {
-      notifyError("Codigo de indicacao indisponivel no momento.");
+      notifyError("Código de indicação indisponível no momento.");
       return;
     }
     try {
       if (navigator.share) {
         await navigator.share({
           title: "Coupons",
-          text: "Use meu codigo de indicacao no Coupons!",
+          text: "Use meu código de indicação no Coupons!",
           url: referralLink
         });
       } else {
@@ -182,7 +412,7 @@ export default function HomePage() {
       }
       setMenuOpen(false);
     } catch {
-      // Usuario pode cancelar o share nativo; nao trata como erro bloqueante.
+      // Usuário pode cancelar o share nativo; não tratar como erro bloqueante.
     }
   }
 
@@ -240,7 +470,7 @@ export default function HomePage() {
                 Painel admin
               </Link>
               <button type="button" className="menu-item" onClick={shareReferralLink}>
-                Compartilhar link de indicacao
+                Compartilhar link de indicação
               </button>
               <button
                 type="button"
@@ -258,8 +488,8 @@ export default function HomePage() {
       )}
 
       <section className="card">
-        <h2>Ola, {auth.name}</h2>
-        <p className="muted">Pontos atuais: {balance ?? "indisponivel"}</p>
+        <h2>Olá, {auth.name}</h2>
+        <p className="muted">Pontos atuais: {balance ?? "indisponível"}</p>
       </section>
 
       <section className="card">
@@ -305,6 +535,8 @@ export default function HomePage() {
           <div className="carousel-track">
             {campaigns.map((c) => {
               const state = getCampaignState(c);
+              const resgateRough =
+                state === "aberta" ? distributionRedemptionInRoughLabel(c.distributionAt) : null;
               const subscribed = !!subscriptions[c.id];
               const cost = pointsCostNumber(c);
               const insufficientFunds =
@@ -314,46 +546,88 @@ export default function HomePage() {
               const processing = !!processingByCampaign[c.id];
               const subscribeDisabled =
                 state !== "aberta" || blockForBalance || processing;
+              const distPhase =
+                subscribed && isDistributionTimeReached(c);
+              const animCenterOnly = !!distributionAnimFocus[c.id];
 
               return (
                 <article
-                  className="campaign-card campaign-card--clickable"
+                  className={
+                    "campaign-card campaign-card--clickable" +
+                    (animCenterOnly ? " campaign-card--anim-only" : "")
+                  }
                   key={c.id}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Ver detalhes da campanha: ${c.title}`}
-                  onClick={() => navigate(`/campanhas/${c.id}`)}
+                  aria-label={
+                    animCenterOnly
+                      ? `Sorteio em andamento: ${c.title}`
+                      : `Ver detalhes da campanha: ${c.title}`
+                  }
+                  onClick={() => {
+                    if (animCenterOnly) return;
+                    navigate(`/campanhas/${c.id}`);
+                  }}
                   onKeyDown={(e) => {
+                    if (animCenterOnly) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       navigate(`/campanhas/${c.id}`);
                     }
                   }}
                 >
-                  <div className="campaign-card__top">
-                    <p className={`badge badge--campaign-state ${state}`}>{campaignStateBadgeLabel(state, c)}</p>
-                    {state === "aberta" && (
-                      <span className="campaign-card__time">{countdownLabel(c.distributionAt)}</span>
-                    )}
-                  </div>
-                  <h3>{c.title}</h3>
-                  <p className="muted">{campaignEntryCostLabel(c.pointsCost)}</p>
-                  {cost > 0 && insufficientFunds && state === "aberta" && (
-                    <p className="campaign-card__balance-hint" onClick={(e) => e.stopPropagation()}>
-                      Saldo insuficiente para esta inscricao.
-                    </p>
+                  {!animCenterOnly && (
+                    <>
+                      <div className="campaign-card__top">
+                        <div className="campaign-card__top-row">
+                          <div className="campaign-card__top-left">
+                            {(state === "fechada" ||
+                              state === "abre_em_breve" ||
+                              (state === "aberta" && resgateRough)) && (
+                              <p
+                                className={`badge badge--campaign-state ${
+                                  state === "aberta" && resgateRough ? "aberta" : state
+                                }`}
+                                aria-live={
+                                  state === "abre_em_breve" || (state === "aberta" && resgateRough)
+                                    ? "polite"
+                                    : undefined
+                                }
+                              >
+                                {state === "aberta" && resgateRough
+                                  ? resgateRough
+                                  : campaignStateBadgeLabel(state, c)}
+                              </p>
+                            )}
+                          </div>
+                          <span className="campaign-card__coins" title="Custo de entrada na campanha">
+                            {campaignPointsCornerLabel(cost)}
+                          </span>
+                        </div>
+                      </div>
+                      <h3>{c.title}</h3>
+                      <p className="muted campaign-card__description">
+                        {campaignCardDescriptionText(c.description)}
+                      </p>
+                      {cost > 0 && insufficientFunds && state === "aberta" && (
+                        <p className="campaign-card__balance-hint" onClick={(e) => e.stopPropagation()}>
+                          Saldo insuficiente para esta inscrição.
+                        </p>
+                      )}
+                      {cost > 0 && balanceUnavailable && state === "aberta" && (
+                        <p className="campaign-card__balance-hint" onClick={(e) => e.stopPropagation()}>
+                          Não foi possível verificar o saldo. Atualize a página.
+                        </p>
+                      )}
+                    </>
                   )}
-                  {cost > 0 && balanceUnavailable && state === "aberta" && (
-                    <p className="campaign-card__balance-hint" onClick={(e) => e.stopPropagation()}>
-                      Nao foi possivel verificar o saldo. Atualize a pagina.
-                    </p>
-                  )}
-                  {state !== "fechada" && (
-                    <p className="muted campaign-card__distribution">
-                      {distributionScheduleLabel(c.distributionAt)}
-                    </p>
-                  )}
-                  <div className="campaign-card__actions" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className={
+                      "campaign-card__actions" +
+                      (animCenterOnly ? " campaign-card__actions--anim-only" : "")
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {!subscribed ? (
                       <button
                         type="button"
@@ -368,20 +642,29 @@ export default function HomePage() {
                         {processing ? "Processando..." : "Inscrever"}
                       </button>
                     ) : (
-                      <p className="ok">Inscricao registrada</p>
+                      <CampaignSubscribedDistributionBlock
+                        key={`${c.id}-${auth.userId}`}
+                        campaign={c}
+                        userId={auth.userId}
+                        navigate={navigate}
+                        onSettled={loadData}
+                        onAnimationFocusChange={onDistributionAnimationFocus}
+                      />
                     )}
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(
-                          state === "fechada" ? `/campanhas/${c.id}/vencedores` : `/campanhas/${c.id}`
-                        );
-                      }}
-                    >
-                      {state === "fechada" ? "Ver vencedores" : "Ver detalhes"}
-                    </button>
+                    {!distPhase && (
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(
+                            state === "fechada" ? `/campanhas/${c.id}/vencedores` : `/campanhas/${c.id}`
+                          );
+                        }}
+                      >
+                        {state === "fechada" ? "Ver vencedores" : "Ver detalhes"}
+                      </button>
+                    )}
                   </div>
                 </article>
               );

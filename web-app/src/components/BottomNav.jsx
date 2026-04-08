@@ -70,18 +70,18 @@ function IconUser() {
 
 export default function BottomNav() {
   return (
-    <nav className="bottom-nav" aria-label="Navegacao principal">
+    <nav className="bottom-nav" aria-label="Navegação principal">
       <NavLink
         to="/"
         end
-        aria-label="Inicio"
+        aria-label="Início"
         className={({ isActive }) => "bottom-nav__link" + (isActive ? " bottom-nav__link--active" : "")}
       >
         <IconHome />
       </NavLink>
       <NavLink
         to="/premios"
-        aria-label="Meus premios"
+        aria-label="Meus prêmios"
         className={({ isActive }) => "bottom-nav__link" + (isActive ? " bottom-nav__link--active" : "")}
       >
         <IconGift />

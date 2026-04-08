@@ -37,7 +37,7 @@ export default function LoginPage({ onAuth }) {
           <div className="login-page__intro">
             <p className="login-page__intro-title">Bem-vindo de volta</p>
             <p className="login-page__intro-text">
-              Entre com seu e-mail para ver campanhas, acompanhar seus premios e gerenciar sua conta com
+              Entre com seu e-mail para ver campanhas, acompanhar seus prêmios e gerenciar sua conta com
               tranquilidade.
             </p>
           </div>
@@ -67,7 +67,7 @@ export default function LoginPage({ onAuth }) {
           </form>
           {error && <p className="error">{error}</p>}
           <p className="muted tiny auth-page__register-line">
-            <span>Nao tem conta?</span>
+            <span>Não tem conta?</span>
             <Link to="/register" className="auth-page__register-link">
               Registrar
             </Link>

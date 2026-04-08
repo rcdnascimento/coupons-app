@@ -317,3 +317,31 @@
   letter-spacing: 0.03em;
   text-align: left;
 }
+
+.admin-points-user-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.admin-page .admin-points-user-row.admin-attach-coupon-suggest__btn {
+  display: flex;
+}
+
+.admin-points-user-row__name {
+  font-weight: 700;
+}
+
+.admin-points-user-row__email {
+  font-size: 0.833rem;
+  word-break: break-all;
+}
+
+.admin-points-user-resolved {
+  margin: -6px 0 10px;
+}
+
+.admin-points-user-resolved__email {
+  font-weight: 500;
+}

@@ -12,13 +12,14 @@ import {
   listCouponsAdmin,
   patchCampaign,
   patchCoupon,
-  searchCoupons
+  searchCoupons,
+  searchUsersAdmin
 } from "../api";
 import {
-  campaignEntryCostLabel,
+  campaignCardDescriptionText,
+  campaignPointsCornerLabel,
   campaignStateBadgeLabel,
-  countdownLabel,
-  distributionScheduleLabel,
+  distributionRedemptionInRoughLabel,
   getCampaignState,
   sortCampaigns
 } from "../utils";
@@ -81,7 +82,9 @@ function AdminDatetimeField({ label, value, onChange, required }) {
 function CampaignPreviewCard({ draft }) {
   if (!draft?.title) {
     return (
-      <p className="muted admin-preview__placeholder">Preencha o titulo para comecar a previsualizacao.</p>
+      <p className="muted admin-preview__placeholder">
+        Preencha o título para começar a pré-visualização.
+      </p>
     );
   }
 
@@ -98,28 +101,46 @@ function CampaignPreviewCard({ draft }) {
       : null;
 
   const state = c ? getCampaignState(c) : null;
+  const resgateRough =
+    state === "aberta" && c ? distributionRedemptionInRoughLabel(c.distributionAt) : null;
+  const cost = Math.max(0, Math.floor(Number(draft.pointsCost) || 0));
 
   return (
     <article className="campaign-card admin-preview-card" aria-hidden={true}>
       {c && state && (
         <div className="campaign-card__top">
-          <p className={`badge badge--campaign-state ${state}`}>{campaignStateBadgeLabel(state, c)}</p>
-          {state === "aberta" && (
-            <span className="campaign-card__time">{countdownLabel(c.distributionAt)}</span>
-          )}
+          <div className="campaign-card__top-row">
+            <div className="campaign-card__top-left">
+              {(state === "fechada" ||
+                state === "abre_em_breve" ||
+                (state === "aberta" && resgateRough)) && (
+                <p
+                  className={`badge badge--campaign-state ${
+                    state === "aberta" && resgateRough ? "aberta" : state
+                  }`}
+                  aria-live={
+                    state === "abre_em_breve" || (state === "aberta" && resgateRough)
+                      ? "polite"
+                      : undefined
+                  }
+                >
+                  {state === "aberta" && resgateRough
+                    ? resgateRough
+                    : campaignStateBadgeLabel(state, c)}
+                </p>
+              )}
+            </div>
+            <span className="campaign-card__coins">{campaignPointsCornerLabel(cost)}</span>
+          </div>
         </div>
       )}
 
       <h3>{draft.title}</h3>
-      <p className="muted">{campaignEntryCostLabel(draft.pointsCost ?? 0)}</p>
-
-      {c && state && state !== "fechada" && (
-        <p className="muted campaign-card__distribution">{distributionScheduleLabel(c.distributionAt)}</p>
-      )}
+      <p className="muted campaign-card__description">{campaignCardDescriptionText(draft.description)}</p>
 
       {!draft.datesComplete && (
         <p className="muted admin-preview__hint">
-          Defina inicio e fim de inscricoes e a data de distribuicao para ver o estado e o calendario.
+          Defina início e fim de inscrições e a data de distribuição para ver o estado e o calendário.
         </p>
       )}
 
@@ -154,19 +175,23 @@ export default function AdminPage() {
 
   const [newCamp, setNewCamp] = useState({
     title: "",
+    description: "",
     pointsCost: "0",
     subStart: "",
     subEnd: "",
-    distribution: ""
+    distribution: "",
+    visibleUntil: ""
   });
 
   const [editId, setEditId] = useState("");
   const [editCamp, setEditCamp] = useState({
     title: "",
+    description: "",
     pointsCost: "0",
     subStart: "",
     subEnd: "",
     distribution: "",
+    visibleUntil: "",
     status: "ACTIVE"
   });
 
@@ -189,6 +214,12 @@ export default function AdminPage() {
   const [editCoupon, setEditCoupon] = useState({ title: "", expires: "" });
 
   const [pointsForm, setPointsForm] = useState({ userId: "", amount: "", reason: "" });
+  const [pointsUserQuery, setPointsUserQuery] = useState("");
+  const [pointsUserSuggest, setPointsUserSuggest] = useState([]);
+  const [pointsUserSuggestLoading, setPointsUserSuggestLoading] = useState(false);
+  const [pointsUserFocused, setPointsUserFocused] = useState(false);
+  const [pointsResolvedUser, setPointsResolvedUser] = useState(null);
+  const pointsUserSuggestBlurTimer = useRef(null);
 
   const previewDraft = useMemo(() => {
     if (!newCamp.title.trim()) return null;
@@ -198,6 +229,7 @@ export default function AdminPage() {
     const datesComplete = Boolean(subStart && subEnd && distribution);
     return {
       title: newCamp.title.trim(),
+      description: newCamp.description,
       pointsCost: Math.max(0, parseInt(newCamp.pointsCost, 10) || 0),
       subscriptionsStartAt: subStart,
       subscriptionsEndAt: subEnd,
@@ -215,6 +247,7 @@ export default function AdminPage() {
     const datesComplete = Boolean(subStart && subEnd && distribution);
     return {
       title: editCamp.title.trim(),
+      description: editCamp.description,
       pointsCost: Math.max(0, parseInt(editCamp.pointsCost, 10) || 0),
       subscriptionsStartAt: subStart,
       subscriptionsEndAt: subEnd,
@@ -226,6 +259,7 @@ export default function AdminPage() {
 
   const canSubmitCreateCamp = useMemo(() => {
     if (!newCamp.title.trim()) return false;
+    if (!newCamp.description.trim()) return false;
     if (!newCamp.subStart?.trim() || !newCamp.subEnd?.trim() || !newCamp.distribution?.trim()) return false;
     return Boolean(
       fromDatetimeLocal(newCamp.subStart) &&
@@ -237,6 +271,7 @@ export default function AdminPage() {
   const canSubmitEditCamp = useMemo(() => {
     if (!editId) return false;
     if (!editCamp.title.trim()) return false;
+    if (!editCamp.description.trim()) return false;
     if (!editCamp.subStart?.trim() || !editCamp.subEnd?.trim() || !editCamp.distribution?.trim()) return false;
     return Boolean(
       fromDatetimeLocal(editCamp.subStart) &&
@@ -305,6 +340,48 @@ export default function AdminPage() {
   }, [panel]);
 
   useEffect(() => {
+    if (panel !== PANEL.POINTS_CREDIT) {
+      setPointsUserSuggest([]);
+      setPointsUserSuggestLoading(false);
+      setPointsUserFocused(false);
+      setPointsResolvedUser(null);
+      setPointsUserQuery("");
+      setPointsForm({ userId: "", amount: "", reason: "" });
+      if (pointsUserSuggestBlurTimer.current) {
+        clearTimeout(pointsUserSuggestBlurTimer.current);
+        pointsUserSuggestBlurTimer.current = null;
+      }
+    }
+  }, [panel]);
+
+  useEffect(() => {
+    if (panel !== PANEL.POINTS_CREDIT) return;
+    const q = pointsUserQuery.trim();
+    if (q.length < 2) {
+      setPointsUserSuggest([]);
+      setPointsUserSuggestLoading(false);
+      return;
+    }
+    const ac = new AbortController();
+    const tid = setTimeout(async () => {
+      setPointsUserSuggestLoading(true);
+      try {
+        const list = await searchUsersAdmin(q, { signal: ac.signal });
+        setPointsUserSuggest(Array.isArray(list) ? list : []);
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+        if (!ac.signal.aborted) setPointsUserSuggest([]);
+      } finally {
+        if (!ac.signal.aborted) setPointsUserSuggestLoading(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(tid);
+      ac.abort();
+    };
+  }, [pointsUserQuery, panel]);
+
+  useEffect(() => {
     if (panel !== PANEL.CAMP_ATTACH) return;
     const q = attach.code.trim();
     if (q.length < 1) {
@@ -362,11 +439,38 @@ export default function AdminPage() {
     setAttachCodeFocused(false);
   }
 
+  function onPointsUserFocus() {
+    if (pointsUserSuggestBlurTimer.current) {
+      clearTimeout(pointsUserSuggestBlurTimer.current);
+      pointsUserSuggestBlurTimer.current = null;
+    }
+    setPointsUserFocused(true);
+  }
+
+  function onPointsUserBlur() {
+    pointsUserSuggestBlurTimer.current = setTimeout(() => {
+      setPointsUserFocused(false);
+    }, 150);
+  }
+
+  function pickPointsUser(u) {
+    if (pointsUserSuggestBlurTimer.current) {
+      clearTimeout(pointsUserSuggestBlurTimer.current);
+      pointsUserSuggestBlurTimer.current = null;
+    }
+    setPointsResolvedUser({ userId: u.userId, name: u.name, email: u.email });
+    setPointsForm((s) => ({ ...s, userId: u.userId }));
+    setPointsUserQuery(u.name);
+    setPointsUserSuggest([]);
+    setPointsUserFocused(false);
+  }
+
   async function onCreateCampaign(e) {
     e.preventDefault();
     try {
       const body = {
         title: newCamp.title.trim(),
+        description: newCamp.description.trim(),
         pointsCost: Math.max(0, parseInt(newCamp.pointsCost, 10) || 0),
         subscriptionsStartAt: fromDatetimeLocal(newCamp.subStart),
         subscriptionsEndAt: fromDatetimeLocal(newCamp.subEnd),
@@ -376,9 +480,21 @@ export default function AdminPage() {
         notifyError("Preencha todas as datas da campanha.");
         return;
       }
+      if (newCamp.visibleUntil?.trim()) {
+        const vu = fromDatetimeLocal(newCamp.visibleUntil);
+        if (vu) body.visibleUntil = vu;
+      }
       const created = await createCampaign(body);
       notifySuccess(`Campanha criada: ${created.id}`);
-      setNewCamp({ title: "", pointsCost: "0", subStart: "", subEnd: "", distribution: "" });
+      setNewCamp({
+        title: "",
+        description: "",
+        pointsCost: "0",
+        subStart: "",
+        subEnd: "",
+        distribution: "",
+        visibleUntil: ""
+      });
       await refreshCampaigns();
     } catch {
       /* API: toast em api.js */
@@ -392,10 +508,12 @@ export default function AdminPage() {
       const c = await getCampaign(id);
       setEditCamp({
         title: c.title || "",
+        description: c.description != null ? String(c.description) : "",
         pointsCost: String(c.pointsCost ?? 0),
         subStart: toDatetimeLocalValue(c.subscriptionsStartAt),
         subEnd: toDatetimeLocalValue(c.subscriptionsEndAt),
         distribution: toDatetimeLocalValue(c.distributionAt),
+        visibleUntil: c.visibleUntil ? toDatetimeLocalValue(c.visibleUntil) : "",
         status: c.status || "ACTIVE"
       });
     } catch {
@@ -409,14 +527,31 @@ export default function AdminPage() {
     try {
       const body = {
         title: editCamp.title.trim(),
+        description: editCamp.description.trim(),
         pointsCost: Math.max(0, parseInt(editCamp.pointsCost, 10) || 0),
         subscriptionsStartAt: fromDatetimeLocal(editCamp.subStart),
         subscriptionsEndAt: fromDatetimeLocal(editCamp.subEnd),
         distributionAt: fromDatetimeLocal(editCamp.distribution),
         status: editCamp.status
       };
+      if (editCamp.visibleUntil?.trim()) {
+        const vu = fromDatetimeLocal(editCamp.visibleUntil);
+        if (vu) body.visibleUntil = vu;
+      }
       await patchCampaign(editId, body);
       notifySuccess("Campanha atualizada.");
+      await refreshCampaigns();
+    } catch {
+      /* toast em api.js */
+    }
+  }
+
+  async function onClearEditVisibleUntil() {
+    if (!editId) return;
+    try {
+      await patchCampaign(editId, { clearVisibleUntil: true });
+      notifySuccess("Data limite de visibilidade removida.");
+      setEditCamp((s) => ({ ...s, visibleUntil: "" }));
       await refreshCampaigns();
     } catch {
       /* toast em api.js */
@@ -457,7 +592,7 @@ export default function AdminPage() {
     try {
       const expiresAt = fromDatetimeLocal(newCoupon.expires);
       if (!newCoupon.code.trim() || !expiresAt) {
-        notifyError("Codigo e validade sao obrigatorios.");
+        notifyError("Código e validade são obrigatórios.");
         return;
       }
       await createCoupon({
@@ -507,7 +642,7 @@ export default function AdminPage() {
     try {
       const amount = parseInt(pointsForm.amount, 10);
       if (!pointsForm.userId.trim() || !amount || !pointsForm.reason.trim()) {
-        notifyError("UserId (UUID), quantidade e motivo sao obrigatorios.");
+        notifyError("Utilizador (pesquisa ou UUID), quantidade e motivo são obrigatórios.");
         return;
       }
       const idempotencyKey =
@@ -523,6 +658,8 @@ export default function AdminPage() {
       });
       notifySuccess("Pontos creditados.");
       setPointsForm({ userId: "", amount: "", reason: "" });
+      setPointsUserQuery("");
+      setPointsResolvedUser(null);
     } catch {
       /* toast em api.js */
     }
@@ -612,7 +749,7 @@ export default function AdminPage() {
       </div>
 
       <section className="card admin-workspace" aria-live="polite">
-        {!panel && <p className="muted admin-workspace__hint">Selecione uma operação num dos cards acima.</p>}
+        {!panel && <p className="muted admin-workspace__hint">Selecione uma operação em um dos cards acima.</p>}
 
         {panel === PANEL.CAMP_CREATE && (
           <>
@@ -620,11 +757,21 @@ export default function AdminPage() {
             <div className="admin-create-grid">
               <form className="admin-form" onSubmit={onCreateCampaign}>
                 <label>
-                  Titulo
+                  Título
                   <input
                     value={newCamp.title}
                     onChange={(e) => setNewCamp((s) => ({ ...s, title: e.target.value }))}
                     required
+                  />
+                </label>
+                <label>
+                  Descrição (exibida no app)
+                  <textarea
+                    value={newCamp.description}
+                    onChange={(e) => setNewCamp((s) => ({ ...s, description: e.target.value }))}
+                    required
+                    rows={4}
+                    maxLength={2000}
                   />
                 </label>
                 <label>
@@ -637,29 +784,38 @@ export default function AdminPage() {
                   />
                 </label>
                 <AdminDatetimeField
-                  label="Inicio inscricoes"
+                  label="Início das inscrições"
                   value={newCamp.subStart}
                   onChange={(v) => setNewCamp((s) => ({ ...s, subStart: v }))}
                   required
                 />
                 <AdminDatetimeField
-                  label="Fim inscricoes"
+                  label="Fim das inscrições"
                   value={newCamp.subEnd}
                   onChange={(v) => setNewCamp((s) => ({ ...s, subEnd: v }))}
                   required
                 />
                 <AdminDatetimeField
-                  label="Distribuicao"
+                  label="Distribuição"
                   value={newCamp.distribution}
                   onChange={(v) => setNewCamp((s) => ({ ...s, distribution: v }))}
                   required
                 />
+                <AdminDatetimeField
+                  label="Visível na lista até (opcional)"
+                  value={newCamp.visibleUntil}
+                  onChange={(v) => setNewCamp((s) => ({ ...s, visibleUntil: v }))}
+                />
+                <p className="muted tiny">
+                  Após esta data/hora a campanha deixa de aparecer na lista inicial do app (detalhe por URL
+                  continua acessível).
+                </p>
                 <button type="submit" className="primary" disabled={!canSubmitCreateCamp}>
                   Criar campanha
                 </button>
               </form>
               <div className="admin-preview">
-                <h3 className="admin-preview__title">Previsualizacao no app</h3>
+                <h3 className="admin-preview__title">Pré-visualização no app</h3>
                 <CampaignPreviewCard draft={previewDraft} />
               </div>
             </div>
@@ -684,11 +840,21 @@ export default function AdminPage() {
               <div className="admin-create-grid">
                 <form className="admin-form" onSubmit={onPatchCampaign}>
                   <label>
-                    Titulo
+                    Título
                     <input
                       value={editCamp.title}
                       onChange={(e) => setEditCamp((s) => ({ ...s, title: e.target.value }))}
                       required
+                    />
+                  </label>
+                  <label>
+                    Descrição (exibida no app)
+                    <textarea
+                      value={editCamp.description}
+                      onChange={(e) => setEditCamp((s) => ({ ...s, description: e.target.value }))}
+                      required
+                      rows={4}
+                      maxLength={2000}
                     />
                   </label>
                   <label>
@@ -701,23 +867,40 @@ export default function AdminPage() {
                     />
                   </label>
                   <AdminDatetimeField
-                    label="Inicio inscricoes"
+                    label="Início das inscrições"
                     value={editCamp.subStart}
                     onChange={(v) => setEditCamp((s) => ({ ...s, subStart: v }))}
                     required
                   />
                   <AdminDatetimeField
-                    label="Fim inscricoes"
+                    label="Fim das inscrições"
                     value={editCamp.subEnd}
                     onChange={(v) => setEditCamp((s) => ({ ...s, subEnd: v }))}
                     required
                   />
                   <AdminDatetimeField
-                    label="Distribuicao"
+                    label="Distribuição"
                     value={editCamp.distribution}
                     onChange={(v) => setEditCamp((s) => ({ ...s, distribution: v }))}
                     required
                   />
+                  <AdminDatetimeField
+                    label="Visível na lista até (opcional)"
+                    value={editCamp.visibleUntil}
+                    onChange={(v) => setEditCamp((s) => ({ ...s, visibleUntil: v }))}
+                  />
+                  {editCamp.visibleUntil?.trim() ? (
+                    <button
+                      type="button"
+                      className="secondary tiny admin-clear-visible-until"
+                      onClick={onClearEditVisibleUntil}
+                    >
+                      Remover data limite de visibilidade
+                    </button>
+                  ) : null}
+                  <p className="muted tiny">
+                    Após esta data/hora a campanha deixa de aparecer na lista inicial do app.
+                  </p>
                   <label>
                     Status
                     <select
@@ -729,11 +912,11 @@ export default function AdminPage() {
                     </select>
                   </label>
                   <button type="submit" className="primary" disabled={!canSubmitEditCamp}>
-                    Guardar alteracoes
+                    Salvar alterações
                   </button>
                 </form>
                 <div className="admin-preview">
-                  <h3 className="admin-preview__title">Previsualizacao no app</h3>
+                  <h3 className="admin-preview__title">Pré-visualização no app</h3>
                   <CampaignPreviewCard draft={editPreviewDraft} />
                 </div>
               </div>
@@ -763,7 +946,7 @@ export default function AdminPage() {
                 </select>
               </label>
               <label className="admin-attach-coupon-field">
-                Codigo do cupom
+                Código do cupom
                 <div className="admin-attach-coupon-wrap">
                   <input
                     autoComplete="off"
@@ -822,7 +1005,7 @@ export default function AdminPage() {
                 </div>
               </label>
               <label>
-                Titulo publico (opcional)
+                Título público (opcional)
                 <input
                   value={attach.title}
                   onChange={(e) => setAttach((s) => ({ ...s, title: e.target.value }))}
@@ -843,8 +1026,8 @@ export default function AdminPage() {
                 />
               </label>
               <p className="muted tiny admin-attach-coupon-hint">
-                Selecione um cupom na lista de sugestoes (inventario). Editar o codigo apos selecionar limpa a
-                selecao.
+                Selecione um cupom na lista de sugestões (inventário). Editar o código após selecionar limpa a
+                seleção.
               </p>
               <button type="submit" className="secondary" disabled={!canSubmitAttachCamp}>
                 Associar
@@ -858,7 +1041,7 @@ export default function AdminPage() {
             <h2 className="admin-workspace__heading">Novo cupom (inventário)</h2>
             <form className="admin-form" onSubmit={onCreateCoupon}>
               <label>
-                Codigo
+                Código
                 <input
                   value={newCoupon.code}
                   onChange={(e) => setNewCoupon((s) => ({ ...s, code: e.target.value }))}
@@ -866,7 +1049,7 @@ export default function AdminPage() {
                 />
               </label>
               <label>
-                Titulo (opcional)
+                Título (opcional)
                 <input
                   value={newCoupon.title}
                   onChange={(e) => setNewCoupon((s) => ({ ...s, title: e.target.value }))}
@@ -902,7 +1085,7 @@ export default function AdminPage() {
             {editCouponId ? (
               <form className="admin-form" onSubmit={onPatchCoupon}>
                 <label>
-                  Titulo
+                  Título
                   <input
                     value={editCoupon.title}
                     onChange={(e) => setEditCoupon((s) => ({ ...s, title: e.target.value }))}
@@ -915,7 +1098,7 @@ export default function AdminPage() {
                   required
                 />
                 <button type="submit" className="primary" disabled={!canSubmitEditCoupon}>
-                  Guardar cupom
+                  Salvar cupom
                 </button>
               </form>
             ) : (
@@ -944,11 +1127,75 @@ export default function AdminPage() {
           <>
             <h2 className="admin-workspace__heading">Creditar pontos</h2>
             <form className="admin-form" onSubmit={onCreditPoints}>
+              <label className="admin-attach-coupon-field">
+                Utilizador
+                <div className="admin-attach-coupon-wrap">
+                  <input
+                    autoComplete="off"
+                    value={pointsUserQuery}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setPointsUserQuery(v);
+                      setPointsResolvedUser(null);
+                      setPointsForm((s) => ({ ...s, userId: "" }));
+                    }}
+                    onFocus={onPointsUserFocus}
+                    onBlur={onPointsUserBlur}
+                    placeholder="Nome ou email (mín. 2 caracteres)"
+                    aria-autocomplete="list"
+                    aria-controls="admin-points-user-suggest-list"
+                    aria-expanded={
+                      pointsUserFocused && pointsUserQuery.trim().length >= 2 ? true : false
+                    }
+                  />
+                  {pointsUserFocused && pointsUserQuery.trim().length >= 2 && (
+                    <ul
+                      id="admin-points-user-suggest-list"
+                      className="admin-attach-coupon-suggest"
+                      role="listbox"
+                    >
+                      {pointsUserSuggestLoading && (
+                        <li className="admin-attach-coupon-suggest__status muted" role="presentation">
+                          A buscar...
+                        </li>
+                      )}
+                      {!pointsUserSuggestLoading && pointsUserSuggest.length === 0 && (
+                        <li className="admin-attach-coupon-suggest__status muted" role="presentation">
+                          Nenhum utilizador encontrado.
+                        </li>
+                      )}
+                      {!pointsUserSuggestLoading &&
+                        pointsUserSuggest.map((u) => (
+                          <li key={u.userId} role="option">
+                            <button
+                              type="button"
+                              className="admin-attach-coupon-suggest__btn admin-points-user-row"
+                              onMouseDown={(ev) => ev.preventDefault()}
+                              onClick={() => pickPointsUser(u)}
+                            >
+                              <span className="admin-points-user-row__name">{u.name}</span>
+                              <span className="admin-points-user-row__email muted">{u.email}</span>
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </div>
+              </label>
+              {pointsResolvedUser && (
+                <p className="muted tiny admin-points-user-resolved">
+                  <span className="admin-points-user-resolved__name">{pointsResolvedUser.name}</span>
+                  <span className="admin-points-user-resolved__email"> — {pointsResolvedUser.email}</span>
+                </p>
+              )}
               <label>
                 User ID (UUID)
                 <input
                   value={pointsForm.userId}
-                  onChange={(e) => setPointsForm((s) => ({ ...s, userId: e.target.value }))}
+                  onChange={(e) => {
+                    setPointsForm((s) => ({ ...s, userId: e.target.value }));
+                    setPointsResolvedUser(null);
+                  }}
                   placeholder="00000000-0000-0000-0000-000000000000"
                   required
                 />

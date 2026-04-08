@@ -9,11 +9,18 @@ public class PatchCampaignRequest {
     @Size(max = 512)
     private String title;
 
+    @Size(max = 2000)
+    private String description;
+
     private Instant subscriptionsStartAt;
 
     private Instant subscriptionsEndAt;
 
     private Instant distributionAt;
+
+    private Instant visibleUntil;
+
+    private Boolean clearVisibleUntil;
 
     @Min(0)
     private Integer pointsCost;
@@ -26,6 +33,14 @@ public class PatchCampaignRequest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Instant getSubscriptionsStartAt() {
@@ -50,6 +65,22 @@ public class PatchCampaignRequest {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public Instant getVisibleUntil() {
+        return visibleUntil;
+    }
+
+    public void setVisibleUntil(Instant visibleUntil) {
+        this.visibleUntil = visibleUntil;
+    }
+
+    public Boolean getClearVisibleUntil() {
+        return clearVisibleUntil;
+    }
+
+    public void setClearVisibleUntil(Boolean clearVisibleUntil) {
+        this.clearVisibleUntil = clearVisibleUntil;
     }
 
     public Integer getPointsCost() {

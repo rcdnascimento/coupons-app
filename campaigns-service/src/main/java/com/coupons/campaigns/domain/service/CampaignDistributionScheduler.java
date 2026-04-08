@@ -6,10 +6,14 @@ import com.coupons.campaigns.domain.entity.Campaign;
 import com.coupons.campaigns.domain.entity.CampaignSubscription;
 import com.coupons.campaigns.domain.exception.ConflictException;
 import com.coupons.campaigns.infra.persistence.CampaignAllocationRepository;
+import com.coupons.campaigns.infra.persistence.CampaignCouponRepository;
 import com.coupons.campaigns.infra.persistence.CampaignRepository;
 import com.coupons.campaigns.infra.persistence.CampaignSubscriptionRepository;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,16 +28,19 @@ public class CampaignDistributionScheduler {
     private final CampaignRepository campaignRepository;
     private final CampaignSubscriptionRepository campaignSubscriptionRepository;
     private final CampaignAllocationRepository campaignAllocationRepository;
+    private final CampaignCouponRepository campaignCouponRepository;
     private final CampaignAllocationService campaignAllocationService;
 
     public CampaignDistributionScheduler(
             CampaignRepository campaignRepository,
             CampaignSubscriptionRepository campaignSubscriptionRepository,
             CampaignAllocationRepository campaignAllocationRepository,
+            CampaignCouponRepository campaignCouponRepository,
             CampaignAllocationService campaignAllocationService) {
         this.campaignRepository = campaignRepository;
         this.campaignSubscriptionRepository = campaignSubscriptionRepository;
         this.campaignAllocationRepository = campaignAllocationRepository;
+        this.campaignCouponRepository = campaignCouponRepository;
         this.campaignAllocationService = campaignAllocationService;
     }
 
@@ -55,8 +62,10 @@ public class CampaignDistributionScheduler {
 
         for (Campaign campaign : dueCampaigns) {
             List<CampaignSubscription> subscriptions =
-                    campaignSubscriptionRepository.findByCampaignIdAndStatusOrderBySubscribedAtAsc(
-                            campaign.getId(), CampaignSubscriptionStatus.ACTIVE);
+                    new ArrayList<>(
+                            campaignSubscriptionRepository.findByCampaignIdAndStatusOrderBySubscribedAtAsc(
+                                    campaign.getId(), CampaignSubscriptionStatus.ACTIVE));
+            Collections.shuffle(subscriptions, ThreadLocalRandom.current());
             int subCount = subscriptions.size();
             long allocationsBefore = campaignAllocationRepository.countByCampaignId(campaign.getId());
 
@@ -68,7 +77,6 @@ public class CampaignDistributionScheduler {
                     subCount,
                     allocationsBefore);
 
-            boolean allAllocated = true;
             for (CampaignSubscription subscription : subscriptions) {
                 if (!campaignAllocationRepository.existsByCampaignIdAndUserId(
                         campaign.getId(), subscription.getUserId())) {
@@ -87,31 +95,35 @@ public class CampaignDistributionScheduler {
                                 subscription.getUserId(),
                                 ex.getMessage());
                     }
-                    if (!campaignAllocationRepository.existsByCampaignIdAndUserId(
-                            campaign.getId(), subscription.getUserId())) {
-                        allAllocated = false;
-                    }
                 }
             }
 
             long allocationsAfter = campaignAllocationRepository.countByCampaignId(campaign.getId());
+            long couponLinks = campaignCouponRepository.countByCampaignId(campaign.getId());
+            long maxPrizes = Math.min(couponLinks, subCount);
 
-            if (allAllocated) {
+            boolean shouldClose = subCount == 0 || (maxPrizes > 0 && allocationsAfter >= maxPrizes);
+
+            if (shouldClose) {
                 campaign.setStatus(CampaignStatus.CLOSED);
                 campaignRepository.save(campaign);
                 log.info(
-                        "Campanha CLOSED após distribuição: campaignId={}, title={}, alocacoes={}, inscricoesACTIVE={} (todos com prémio alocado ou sem inscrições).",
+                        "Campanha CLOSED: campaignId={}, title={}, alocacoes={}, cuponsLigados={}, inscricoesACTIVE={}, limitePrémios={}.",
                         campaign.getId(),
                         campaign.getTitle(),
                         allocationsAfter,
-                        subCount);
+                        couponLinks,
+                        subCount,
+                        maxPrizes);
             } else {
                 log.warn(
-                        "Campanha mantém-se ACTIVE: ainda faltam alocações (campaignId={}, title={}, alocacoes={}, inscricoesACTIVE={}). Verifique cupons ligados ao pool.",
-                        campaign.getId(),
-                        campaign.getTitle(),
+                        "Campanha mantém-se ACTIVE: alocacoes={}/{} (cupons={}, inscricoes={}) campaignId={}, title={}.",
                         allocationsAfter,
-                        subCount);
+                        maxPrizes,
+                        couponLinks,
+                        subCount,
+                        campaign.getId(),
+                        campaign.getTitle());
             }
         }
     }

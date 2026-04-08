@@ -1,4 +1,15 @@
-const BFF_BASE_URL = import.meta.env.VITE_BFF_URL || "http://localhost:8090";
+function resolveBffBaseUrl() {
+  const fromEnv = import.meta.env.VITE_BFF_URL;
+  if (fromEnv) return fromEnv;
+  if (typeof window === "undefined") return "http://localhost:8090";
+  const { hostname, protocol } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8090";
+  }
+  return `${protocol}//${hostname}:8090`;
+}
+
+const BFF_BASE_URL = resolveBffBaseUrl();
 
 /** Definido por NotificationProvider — mostra toast em falhas HTTP/rede. */
 let apiOnError = null;
@@ -22,7 +33,7 @@ async function requestJson(url, options = {}) {
     });
   } catch (err) {
     if (err?.name === "AbortError") throw err;
-    const msg = "Nao foi possivel ligar ao servidor. Verifique a rede ou tente mais tarde.";
+    const msg = "Não foi possível ligar ao servidor. Verifique a rede ou tente mais tarde.";
     if (!silent) apiOnError?.(msg);
     throw new Error(msg);
   }
@@ -79,9 +90,12 @@ export async function getMyCampaignSubscriptionStatus(campaignId, userId, option
   );
 }
 
-export async function listPrizesByUser(userId, campaignId) {
+export async function listPrizesByUser(userId, campaignId, options = {}) {
   const suffix = campaignId ? `?campaignId=${encodeURIComponent(campaignId)}` : "";
-  return requestJson(`${BFF_BASE_URL}/api/prizes/users/${userId}${suffix}`);
+  return requestJson(`${BFF_BASE_URL}/api/prizes/users/${userId}${suffix}`, {
+    method: "GET",
+    ...options
+  });
 }
 
 export async function getMeBalance(userId) {
@@ -110,8 +124,11 @@ export async function createCampaign(payload) {
   });
 }
 
-export async function getCampaign(campaignId) {
-  return requestJson(`${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}`);
+export async function getCampaign(campaignId, options = {}) {
+  return requestJson(`${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}`, {
+    method: "GET",
+    ...options
+  });
 }
 
 export async function patchCampaign(campaignId, payload) {
@@ -166,6 +183,19 @@ export async function creditUserLedger(payload) {
   return requestJson(`${BFF_BASE_URL}/api/admin/ledger/credits`, {
     method: "POST",
     body: JSON.stringify(payload)
+  });
+}
+
+/** Lista utilizadores por nome ou email (mín. 2 caracteres no backend). */
+export async function searchUsersAdmin(query, options = {}) {
+  const { silent = true, ...fetchOpts } = options;
+  const q = typeof query === "string" ? query.trim() : "";
+  if (q.length < 2) return [];
+  const params = new URLSearchParams();
+  params.set("q", q);
+  return requestJson(`${BFF_BASE_URL}/api/admin/users/search?${params.toString()}`, {
+    silent,
+    ...fetchOpts
   });
 }
 

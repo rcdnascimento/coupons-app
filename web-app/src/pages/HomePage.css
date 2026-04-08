@@ -239,6 +239,125 @@
   }
 }
 
+/* Sorteio / distribuição (cards inscritos após distributionAt) */
+.distribution-draw {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.distribution-draw__visual {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.distribution-draw__orb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--text), var(--gray-400));
+  opacity: 0.85;
+  animation: distribution-orb 1.1s ease-in-out infinite;
+}
+
+.distribution-draw__orb--a {
+  animation-delay: 0ms;
+}
+
+.distribution-draw__orb--b {
+  animation-delay: 150ms;
+  background: linear-gradient(145deg, #5b8def, #9b7dff);
+}
+
+.distribution-draw__orb--c {
+  animation-delay: 300ms;
+  background: linear-gradient(145deg, #2dd4bf, #22c55e);
+}
+
+@keyframes distribution-orb {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.45;
+  }
+
+  50% {
+    transform: translateY(-10px) scale(1.12);
+    opacity: 1;
+  }
+}
+
+.distribution-draw__msg {
+  margin: 0;
+  min-height: 4.35em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.distribution-draw__msg-inner {
+  display: block;
+  font-size: 0.94rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text);
+  animation: distribution-msg-slide-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes distribution-msg-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes distribution-msg-enter-reduced {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .distribution-draw__msg-inner {
+    animation: distribution-msg-enter-reduced 0.35s ease-out both;
+  }
+}
+
+.distribution-result__title {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.distribution-result__title--won {
+  color: var(--success, #15803d);
+}
+
+.distribution-result__title--lost {
+  color: var(--text);
+}
+
+.distribution-result__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
 @media (min-width: 768px) {
   /* Inset horizontal vem de `--page-gutter` em global.css (todas as páginas). */
   .home-page .topbar {

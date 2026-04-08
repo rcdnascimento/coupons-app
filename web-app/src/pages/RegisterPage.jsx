@@ -51,10 +51,10 @@ export default function RegisterPage({ onAuth }) {
       <div className="register-page__body">
         <div className="register-page__center">
           <div className="register-page__intro">
-            <p className="register-page__intro-title">Que bom ter voce aqui</p>
+            <p className="register-page__intro-title">Que bom ter você aqui</p>
             <p className="register-page__intro-text">
-              Cadastre-se em poucos passos para participar das campanhas, acompanhar seus premios e usar seu
-              codigo de indicacao com amigos.
+              Cadastre-se em poucos passos para participar das campanhas, acompanhar seus prêmios e usar seu
+              código de indicação com amigos.
             </p>
           </div>
           <form onSubmit={submit} aria-label="Criar conta">
@@ -86,7 +86,7 @@ export default function RegisterPage({ onAuth }) {
               />
             </label>
             <label>
-              Codigo de indicacao (opcional)
+              Código de indicação (opcional)
               <input
                 value={form.referralCode}
                 onChange={(e) => setForm((f) => ({ ...f, referralCode: e.target.value }))}

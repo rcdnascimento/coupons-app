@@ -374,10 +374,52 @@ button:disabled {
 
 .campaign-card__top {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   width: 100%;
+}
+
+.campaign-card__top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.campaign-card__top-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.campaign-card__coins {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--gray-50);
+  padding: 6px 12px;
+  border-radius: 20px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.campaign-card__countdown-line {
+  margin: 0;
+  width: 100%;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.campaign-card__description {
+  margin: 0;
+  line-height: 1.45;
+  font-size: 0.9375rem;
 }
 
 .campaign-card__time {
@@ -391,11 +433,6 @@ button:disabled {
   text-align: right;
   white-space: nowrap;
   flex-shrink: 0;
-}
-
-.campaign-card__distribution {
-  margin: 0;
-  line-height: 1.45;
 }
 
 .campaign-card__balance-hint {
@@ -421,6 +458,34 @@ button:disabled {
 
 .campaign-card__actions .ok {
   margin: 0;
+}
+
+/** Durante sorteio: só a animação, centralizada no card. */
+.campaign-card--anim-only {
+  justify-content: center;
+  min-height: 220px;
+}
+
+.campaign-card--anim-only.campaign-card--clickable {
+  cursor: default;
+}
+
+.campaign-card--anim-only .campaign-card__actions--anim-only {
+  margin-top: 0;
+  padding-top: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.campaign-card--anim-only .distribution-draw {
+  padding: 0;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
 }
 
 .badge {
@@ -656,5 +721,11 @@ button:disabled {
   .campaign-card--clickable:active {
     transform: translateY(-1px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+  }
+
+  .campaign-card--anim-only.campaign-card--clickable:hover,
+  .campaign-card--anim-only.campaign-card--clickable:active {
+    transform: none;
+    box-shadow: var(--shadow-soft);
   }
 }

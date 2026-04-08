@@ -12,6 +12,10 @@ public class CreateCampaignRequest {
     @Size(max = 512)
     private String title;
 
+    @NotBlank
+    @Size(max = 2000)
+    private String description;
+
     @NotNull
     private Instant subscriptionsStartAt;
 
@@ -20,6 +24,9 @@ public class CreateCampaignRequest {
 
     @NotNull
     private Instant distributionAt;
+
+    /** Opcional: após este instante a campanha pode ser ocultada nas listagens do cliente. */
+    private Instant visibleUntil;
 
     @NotNull
     @Min(0)
@@ -31,6 +38,14 @@ public class CreateCampaignRequest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Instant getSubscriptionsStartAt() {
@@ -55,6 +70,14 @@ public class CreateCampaignRequest {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public Instant getVisibleUntil() {
+        return visibleUntil;
+    }
+
+    public void setVisibleUntil(Instant visibleUntil) {
+        this.visibleUntil = visibleUntil;
     }
 
     public Integer getPointsCost() {

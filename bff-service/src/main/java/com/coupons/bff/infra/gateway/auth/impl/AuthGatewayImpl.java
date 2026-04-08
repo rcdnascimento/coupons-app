@@ -2,10 +2,13 @@ package com.coupons.bff.infra.gateway.auth.impl;
 
 import com.coupons.bff.infra.gateway.auth.AuthGateway;
 import com.coupons.bff.infra.gateway.support.GatewayHttpSupport;
+import com.coupons.bff.infra.resource.dto.AdminUserSearchResponse;
 import com.coupons.bff.infra.resource.dto.AuthTokenResponse;
 import com.coupons.bff.infra.resource.dto.LoginRequest;
 import com.coupons.bff.infra.resource.dto.RegisterRequest;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -52,6 +55,22 @@ public class AuthGatewayImpl implements AuthGateway {
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(AuthTokenResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("auth-service");
+        }
+    }
+
+    @Override
+    public List<AdminUserSearchResponse> searchUsers(String q) {
+        try {
+            return authWebClient
+                    .get()
+                    .uri(uriBuilder -> uriBuilder.path("/v1/admin/users/search").queryParam("q", q).build())
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<AdminUserSearchResponse>>() {})
                     .block();
         } catch (WebClientResponseException ex) {
             throw gatewayHttpSupport.upstream(ex);

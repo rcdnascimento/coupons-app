@@ -27,6 +27,10 @@ public class Campaign {
     @Column(nullable = false, length = 512)
     private String title;
 
+    /** Descrição apresentada no app (obrigatória na API de criação). */
+    @Column(nullable = false, length = 2000, columnDefinition = "varchar(2000) not null default ''")
+    private String description = "";
+
     @Column(name = "subscriptions_start_at", nullable = false)
     private Instant subscriptionsStartAt;
 
@@ -35,6 +39,10 @@ public class Campaign {
 
     @Column(name = "distribution_at", nullable = false)
     private Instant distributionAt;
+
+    /** Se não nulo, o cliente pode ocultar a campanha nas listagens após este instante. */
+    @Column(name = "visible_until")
+    private Instant visibleUntil;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -82,6 +90,14 @@ public class Campaign {
         this.title = title;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public Instant getSubscriptionsStartAt() {
         return subscriptionsStartAt;
     }
@@ -104,6 +120,14 @@ public class Campaign {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public Instant getVisibleUntil() {
+        return visibleUntil;
+    }
+
+    public void setVisibleUntil(Instant visibleUntil) {
+        this.visibleUntil = visibleUntil;
     }
 
     public CampaignStatus getStatus() {
