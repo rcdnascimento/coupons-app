@@ -1,0 +1,319 @@
+.admin-page__header {
+  margin-bottom: 20px;
+}
+
+.admin-page__back {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-page__back:hover {
+  text-decoration: underline;
+}
+
+/* Três cards lado a lado (empilham no mobile). */
+.admin-hub {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .admin-hub {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+.admin-hub__card {
+  margin-bottom: 0;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-hub__title {
+  font-size: 1.125rem;
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.admin-hub__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-hub__btn {
+  width: 100%;
+  min-height: 46px;
+  height: auto;
+  font-size: 0.944rem;
+  font-weight: 600;
+  justify-content: center;
+  text-align: center;
+  border-radius: 12px;
+}
+
+.admin-hub__btn--active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.07);
+}
+
+/* Área única com o formulário da operação escolhida. */
+.admin-workspace {
+  margin-top: 0;
+  padding: 20px 18px;
+}
+
+.admin-workspace__hint {
+  margin: 0;
+  text-align: center;
+  padding: 20px 8px;
+  font-size: 0.944rem;
+}
+
+.admin-workspace__heading {
+  font-size: 1.25rem;
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Coluna auth (~28rem) não se aplica no admin: inputs alinham à largura do cartão como os selects. */
+.admin-page .admin-workspace form {
+  max-width: none;
+  min-width: unset;
+  width: 100%;
+}
+
+.admin-page .admin-workspace input,
+.admin-page .admin-workspace select,
+.admin-page .admin-workspace textarea {
+  min-width: unset;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-create-grid {
+  display: grid;
+  gap: 36px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .admin-create-grid {
+    grid-template-columns: minmax(0, 1fr) min(340px, 42%);
+    column-gap: 36px;
+    row-gap: 0;
+  }
+
+  .admin-create-grid .admin-form {
+    padding-right: 24px;
+  }
+
+  .admin-create-grid .admin-preview {
+    padding: 12px 14px 12px 14px;
+    align-self: start;
+  }
+}
+
+.admin-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 0;
+}
+
+.admin-form .primary,
+.admin-form .secondary {
+  margin-top: 4px;
+}
+
+.admin-datetime-field {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.admin-datetime-field__label {
+  display: block;
+}
+
+.admin-datetime-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-datetime-preset {
+  min-height: 36px;
+  height: auto;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.admin-datetime-preset:hover:not(:disabled) {
+  background: var(--white);
+  border-color: var(--gray-400);
+}
+
+.admin-datetime-preset:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.admin-inline-label {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 0.778rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-600);
+}
+
+.admin-preview {
+  background: var(--page-bg);
+  border-radius: var(--radius-card);
+  padding: 12px 14px;
+  border: 1px dashed var(--gray-200);
+}
+
+.admin-preview__title {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.admin-preview__placeholder {
+  margin: 0;
+  font-size: 0.944rem;
+}
+
+.admin-preview__hint {
+  margin: 12px 0 0;
+  font-size: 0.889rem;
+  line-height: 1.45;
+}
+
+/* Cartão alinhado ao centro da área tracejada; conteúdo interno igual ao da home. */
+.admin-preview-card {
+  max-width: 340px;
+  width: 100%;
+  flex: none;
+  margin-inline: auto;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.admin-coupon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.944rem;
+}
+
+.admin-coupon-list li {
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border-radius: 8px;
+}
+
+.admin-attach-coupon-hint {
+  margin: -4px 0 0;
+  line-height: 1.4;
+}
+
+.admin-attach-coupon-field {
+  position: relative;
+}
+
+.admin-attach-coupon-wrap {
+  position: relative;
+}
+
+.admin-attach-coupon-suggest {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-attach-coupon-suggest__status {
+  padding: 10px 12px;
+  font-size: 0.889rem;
+  text-align: left;
+}
+
+.admin-page .admin-attach-coupon-suggest__btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  min-height: unset;
+  height: auto;
+  text-align: left;
+  font: inherit;
+  font-size: 0.944rem;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.admin-attach-coupon-suggest__btn:hover {
+  background: var(--gray-50);
+}
+
+.admin-attach-coupon-suggest__code {
+  display: block;
+  font-weight: 700;
+  text-align: left;
+}
+
+.admin-attach-coupon-suggest__title {
+  display: block;
+  font-size: 0.833rem;
+  text-align: left;
+}
+
+.admin-attach-coupon-suggest__meta {
+  display: block;
+  font-size: 0.778rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+}

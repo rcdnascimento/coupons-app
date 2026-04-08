@@ -1,29 +1,73 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCampaignSummary, listCampaigns } from "../api";
-import { campaignEntryCostLabel, countdownLabel, distributionScheduleLabel, getCampaignState } from "../utils";
+import {
+  campaignEntryCostLabel,
+  campaignStateBadgeLabel,
+  countdownLabel,
+  distributionScheduleLabel,
+  getCampaignState
+} from "../utils";
 import "./CampaignPage.css";
 
 export default function CampaignPage() {
   const { campaignId } = useParams();
   const navigate = useNavigate();
+  const [loadFailed, setLoadFailed] = useState(false);
   const [campaign, setCampaign] = useState(null);
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
+    setLoadFailed(false);
     async function loadCampaign() {
-      const all = await listCampaigns();
-      const c = all.find((item) => item.id === campaignId) || null;
-      setCampaign(c);
-      if (!c) {
+      try {
+        const all = await listCampaigns();
+        const c = all.find((item) => item.id === campaignId) || null;
+        setCampaign(c);
+        if (!c) {
+          setSummary(null);
+          return;
+        }
+        try {
+          const s = await getCampaignSummary(campaignId);
+          setSummary(s);
+        } catch {
+          setSummary(null);
+        }
+      } catch {
+        setLoadFailed(true);
+        setCampaign(null);
         setSummary(null);
-        return;
       }
-      const s = await getCampaignSummary(campaignId).catch(() => null);
-      setSummary(s);
     }
     loadCampaign();
   }, [campaignId]);
+
+  if (loadFailed) {
+    return (
+      <main className="page campaign-page">
+        <div className="campaign-detail">
+          <Link to="/" className="campaign-back-btn" aria-label="Voltar">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden={true}
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </Link>
+          <p className="campaign-detail__empty">Nao foi possivel carregar as campanhas.</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!campaign) {
     return (
@@ -75,7 +119,9 @@ export default function CampaignPage() {
             </svg>
           </Link>
           <div className="campaign-card__top campaign-detail__meta">
-            <p className={`badge ${campaignState}`}>{campaignState.replace("_", " ")}</p>
+            <p className={`badge badge--campaign-state ${campaignState}`}>
+              {campaignStateBadgeLabel(campaignState, campaign)}
+            </p>
             {campaignState === "aberta" && (
               <span className="campaign-card__time">{countdownLabel(campaign.distributionAt)}</span>
             )}

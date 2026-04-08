@@ -210,6 +210,42 @@ input:focus {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+select {
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-input);
+  padding: 16px 44px 16px 18px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text);
+  background-color: var(--white);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235c5c5c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 14px 14px;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--gray-400);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 button {
   border: none;
   border-radius: var(--radius-button);
@@ -329,7 +365,8 @@ button:disabled {
   border: 0;
   border-radius: var(--radius-card);
   padding: 18px 16px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   scroll-snap-align: start;
   box-shadow: var(--shadow-soft);
@@ -361,17 +398,29 @@ button:disabled {
   line-height: 1.45;
 }
 
+.campaign-card__balance-hint {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: var(--danger, #b42318);
+}
+
 .campaign-card--clickable {
   cursor: pointer;
 }
 
-.campaign-card > .primary,
-.campaign-card > .ok {
-  margin-top: 50px;
+/** Bloco de botões colado ao padding inferior do card (empurra com flex, sem margin-top fixo). */
+.campaign-card__actions {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  flex-shrink: 0;
 }
 
-.campaign-card > .secondary {
-  margin-top: 8px;
+.campaign-card__actions .ok {
+  margin: 0;
 }
 
 .badge {
@@ -385,6 +434,10 @@ button:disabled {
   background: var(--gray-50);
   color: var(--text);
   border: 0;
+}
+
+.badge--campaign-state {
+  text-transform: none;
 }
 
 .badge.aberta,

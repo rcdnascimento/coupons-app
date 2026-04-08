@@ -1,19 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { getMeBalance, getMeProfile } from "../api";
+import { useNotification } from "../context/NotificationProvider";
 import "./AccountPage.css";
 
 export default function AccountPage() {
   const { auth, onLogout } = useOutletContext();
+  const { notifyError } = useNotification();
   const [balance, setBalance] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   async function load() {
     try {
       setLoading(true);
-      setError("");
       const bal = await getMeBalance(auth.userId).catch(() => null);
       setBalance(bal?.balance ?? null);
       const profileOut = await getMeProfile({
@@ -22,8 +22,6 @@ export default function AccountPage() {
         email: auth.email
       }).catch(() => null);
       setProfile(profileOut);
-    } catch (err) {
-      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -43,7 +41,7 @@ export default function AccountPage() {
 
   async function shareReferralLink() {
     if (!referralLink) {
-      setError("Codigo de indicacao indisponivel no momento.");
+      notifyError("Codigo de indicacao indisponivel no momento.");
       return;
     }
     try {
@@ -74,7 +72,6 @@ export default function AccountPage() {
           Pontos atuais:{" "}
           {loading ? "..." : balance != null ? balance : "indisponivel"}
         </p>
-        {error && <p className="error">{error}</p>}
       </section>
 
       <section className="account-page__section account-page__actions">

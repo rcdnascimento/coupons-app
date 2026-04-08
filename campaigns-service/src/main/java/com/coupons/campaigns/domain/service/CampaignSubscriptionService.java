@@ -5,6 +5,7 @@ import com.coupons.campaigns.domain.CampaignSubscriptionStatus;
 import com.coupons.campaigns.domain.entity.Campaign;
 import com.coupons.campaigns.domain.entity.CampaignSubscription;
 import com.coupons.campaigns.domain.exception.BadRequestException;
+import com.coupons.campaigns.infra.resource.dto.MyCampaignSubscriptionResponse;
 import com.coupons.campaigns.domain.exception.CampaignNotFoundException;
 import com.coupons.campaigns.domain.exception.ConflictException;
 import com.coupons.campaigns.infra.messaging.CampaignEventMarshaller;
@@ -115,5 +116,16 @@ public class CampaignSubscriptionService {
                         }
                     }
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public MyCampaignSubscriptionResponse getMySubscriptionStatus(UUID campaignId, UUID userId) {
+        if (!campaignRepository.existsById(campaignId)) {
+            throw new CampaignNotFoundException(campaignId);
+        }
+        return campaignSubscriptionRepository
+                .findByCampaignIdAndUserId(campaignId, userId)
+                .map(s -> new MyCampaignSubscriptionResponse(s.getStatus().name()))
+                .orElseGet(() -> new MyCampaignSubscriptionResponse("NONE"));
     }
 }

@@ -7,6 +7,56 @@ export function getCampaignState(c) {
   return "aberta";
 }
 
+const CAMPAIGN_STATE_LABELS = {
+  aberta: "Aberta",
+  fechada: "Fechada"
+};
+
+const FALLBACK_OPENS_SOON = "Abre em breve";
+
+/**
+ * Quanto falta até `subscriptionsStartAt` — só a maior unidade (instante da chamada; não é contador com segundos).
+ * Sempre com prefixo "Abre em ". Ex.: 1h30m → "Abre em 1h"; 29m → "Abre em 29 minutos".
+ */
+export function subscriptionsOpenInRoughLabel(subscriptionsStartAtIso) {
+  if (!subscriptionsStartAtIso) return FALLBACK_OPENS_SOON;
+  const ms = new Date(subscriptionsStartAtIso).getTime() - Date.now();
+  if (ms <= 0) return FALLBACK_OPENS_SOON;
+
+  let part;
+  const days = Math.floor(ms / 86400000);
+  if (days >= 1) {
+    part = days === 1 ? "1 dia" : `${days} dias`;
+  } else {
+    const hours = Math.floor(ms / 3600000);
+    if (hours >= 1) {
+      part = `${hours}h`;
+    } else {
+      const minutes = Math.floor(ms / 60000);
+      if (minutes >= 1) {
+        part = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+      } else {
+        part = "menos de 1 minuto";
+      }
+    }
+  }
+  return `Abre em ${part}`;
+}
+
+/**
+ * Texto do badge de estado. Para `abre_em_breve`, usa `campaignLike.subscriptionsStartAt` quando existir.
+ * `campaignLike`: objeto com `subscriptionsStartAt` (ISO), p.ex. campanha da API ou rascunho do admin.
+ */
+export function campaignStateBadgeLabel(state, campaignLike) {
+  if (!state) return "";
+  if (state === "abre_em_breve") {
+    const start = campaignLike?.subscriptionsStartAt;
+    if (start) return subscriptionsOpenInRoughLabel(start);
+    return FALLBACK_OPENS_SOON;
+  }
+  return CAMPAIGN_STATE_LABELS[state] ?? state.replace(/_/g, " ");
+}
+
 export function sortCampaigns(campaigns) {
   const rank = { aberta: 0, abre_em_breve: 1, fechada: 2 };
   return [...campaigns].sort((a, b) => {

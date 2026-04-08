@@ -3,8 +3,11 @@ package com.coupons.campaigns.domain.service;
 import com.coupons.campaigns.domain.CampaignStatus;
 import com.coupons.campaigns.domain.entity.Campaign;
 import com.coupons.campaigns.domain.exception.BadRequestException;
+import com.coupons.campaigns.domain.exception.CampaignNotFoundException;
 import com.coupons.campaigns.infra.persistence.CampaignRepository;
+import com.coupons.campaigns.infra.resource.dto.PatchCampaignRequest;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,20 +22,53 @@ public class CampaignManagementService {
 
     @Transactional
     public Campaign createCampaign(Campaign campaign) {
-        if (!campaign.getSubscriptionsStartAt().isBefore(campaign.getSubscriptionsEndAt())) {
-            throw new BadRequestException("subscriptionsStartAt deve ser anterior a subscriptionsEndAt");
-        }
-        if (campaign.getDistributionAt().isBefore(campaign.getSubscriptionsEndAt())) {
-            throw new BadRequestException("distributionAt deve ser posterior ao fim das inscrições");
-        }
-
+        validateTimeline(campaign);
         campaign.setTitle(campaign.getTitle().trim());
         campaign.setStatus(CampaignStatus.ACTIVE);
         return campaignRepository.save(campaign);
     }
 
     @Transactional(readOnly = true)
+    public Campaign getById(UUID id) {
+        return campaignRepository.findById(id).orElseThrow(() -> new CampaignNotFoundException(id));
+    }
+
+    @Transactional
+    public Campaign patchCampaign(UUID id, PatchCampaignRequest patch) {
+        Campaign campaign = getById(id);
+        if (patch.getTitle() != null) {
+            campaign.setTitle(patch.getTitle().trim());
+        }
+        if (patch.getSubscriptionsStartAt() != null) {
+            campaign.setSubscriptionsStartAt(patch.getSubscriptionsStartAt());
+        }
+        if (patch.getSubscriptionsEndAt() != null) {
+            campaign.setSubscriptionsEndAt(patch.getSubscriptionsEndAt());
+        }
+        if (patch.getDistributionAt() != null) {
+            campaign.setDistributionAt(patch.getDistributionAt());
+        }
+        if (patch.getPointsCost() != null) {
+            campaign.setPointsCost(patch.getPointsCost());
+        }
+        if (patch.getStatus() != null) {
+            campaign.setStatus(patch.getStatus());
+        }
+        validateTimeline(campaign);
+        return campaignRepository.save(campaign);
+    }
+
+    @Transactional(readOnly = true)
     public List<Campaign> listCampaigns() {
         return campaignRepository.findAll();
+    }
+
+    private void validateTimeline(Campaign campaign) {
+        if (!campaign.getSubscriptionsStartAt().isBefore(campaign.getSubscriptionsEndAt())) {
+            throw new BadRequestException("subscriptionsStartAt deve ser anterior a subscriptionsEndAt");
+        }
+        if (campaign.getDistributionAt().isBefore(campaign.getSubscriptionsEndAt())) {
+            throw new BadRequestException("distributionAt deve ser posterior ao fim das inscrições");
+        }
     }
 }

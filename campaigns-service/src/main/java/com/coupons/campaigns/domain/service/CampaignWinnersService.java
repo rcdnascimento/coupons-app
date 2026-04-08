@@ -15,11 +15,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Vencedores = alocações da campanha, ordenadas para ranking público:
+ * menor {@code priority} do vínculo campanha–cupom primeiro (1º prémio antes do 2º); empatados por
+ * {@code allocatedAt} crescente; empate final por {@code userId} para ordem estável.
+ */
 @Service
 public class CampaignWinnersService {
+
+    private static final Logger log = LoggerFactory.getLogger(CampaignWinnersService.class);
 
     private final CampaignRepository campaignRepository;
     private final CampaignAllocationRepository campaignAllocationRepository;
@@ -61,7 +70,8 @@ public class CampaignWinnersService {
 
         rows.sort(
                 Comparator.comparingInt((AllocationRow r) -> r.sortPriority)
-                        .thenComparing(r -> r.allocation.getAllocatedAt(), Comparator.nullsLast(Comparator.naturalOrder())));
+                        .thenComparing(r -> r.allocation.getAllocatedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(r -> r.allocation.getUserId(), Comparator.nullsLast(Comparator.naturalOrder())));
 
         List<CampaignWinnersResponse.WinnerEntry> entries = new ArrayList<>();
         int rank = 1;
@@ -76,6 +86,7 @@ public class CampaignWinnersService {
 
         CampaignWinnersResponse response = new CampaignWinnersResponse();
         response.setEntries(entries);
+        log.debug("Ranking de vencedores campaignId={}: {} entrada(s).", campaignId, entries.size());
         return response;
     }
 

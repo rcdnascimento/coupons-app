@@ -1,0 +1,113 @@
+/* Barra inferior tipo lorie-web — acima da bottom nav + safe area */
+
+.bottom-notification {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0));
+  padding-right: max(16px, env(safe-area-inset-right, 0));
+  padding-bottom: calc(16px + var(--bottom-nav-height) + env(safe-area-inset-bottom, 0));
+}
+
+.bottom-notification__panel {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: min(420px, 100%);
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  animation: bottom-notification-in 0.35s ease forwards;
+}
+
+.bottom-notification__panel--out {
+  animation: bottom-notification-out 0.28s ease forwards;
+}
+
+.bottom-notification__panel--error {
+  background: #2a2a30;
+  color: #fff;
+}
+
+.bottom-notification__panel--error .bottom-notification__icon {
+  color: #fca5a5;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.bottom-notification__panel--success {
+  background: #1e3a2f;
+  color: #fff;
+}
+
+.bottom-notification__panel--success .bottom-notification__icon {
+  color: #86efac;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.bottom-notification__text {
+  margin: 0;
+  flex: 1;
+  font-size: 0.944rem;
+  font-weight: 600;
+  line-height: 1.4;
+  padding-top: 1px;
+}
+
+.bottom-notification__close {
+  flex-shrink: 0;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  margin: -6px -8px -6px 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.75;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-notification__close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes bottom-notification-in {
+  from {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bottom-notification-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+}

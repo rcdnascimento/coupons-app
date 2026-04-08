@@ -7,17 +7,18 @@ export default function PrizesPage() {
   const { auth } = useOutletContext();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        setError("");
+        setLoadFailed(false);
         const prizes = await listPrizesByUser(auth.userId);
         setItems(prizes);
-      } catch (err) {
-        setError(err.message);
+      } catch {
+        setLoadFailed(true);
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -32,13 +33,15 @@ export default function PrizesPage() {
       </header>
 
       {loading && <p className="muted">Carregando...</p>}
-      {error && <p className="error">{error}</p>}
+      {!loading && loadFailed && (
+        <p className="muted prizes-page__empty">Nao foi possivel carregar a lista. Tente novamente.</p>
+      )}
 
-      {!loading && !error && items.length === 0 && (
+      {!loading && !loadFailed && items.length === 0 && (
         <p className="muted prizes-page__empty">Voce ainda nao ganhou nenhum premio.</p>
       )}
 
-      {!loading && items.length > 0 && (
+      {!loading && !loadFailed && items.length > 0 && (
         <ul className="prizes-page__list">
           {items.map((p) => (
             <li key={p.id} className="prizes-page__item">

@@ -6,7 +6,9 @@ import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
+import com.coupons.bff.infra.resource.dto.MyCampaignSubscriptionResponse;
 import com.coupons.bff.infra.resource.dto.CreateCampaignRequest;
+import com.coupons.bff.infra.resource.dto.PatchCampaignRequest;
 import com.coupons.bff.infra.resource.dto.UserIdRequest;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -65,6 +67,40 @@ public class CampaignsGatewayImpl implements CampaignsGateway {
     }
 
     @Override
+    public CampaignResponse getCampaign(String campaignId) {
+        try {
+            return campaignsWebClient
+                    .get()
+                    .uri("/v1/campaigns/{campaignId}", campaignId)
+                    .retrieve()
+                    .bodyToMono(CampaignResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public CampaignResponse patchCampaign(String campaignId, PatchCampaignRequest request) {
+        try {
+            return campaignsWebClient
+                    .patch()
+                    .uri("/v1/campaigns/{campaignId}", campaignId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(CampaignResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
     public CampaignResponse addCoupon(String campaignId, AddCouponToCampaignRequest request) {
         try {
             return campaignsWebClient
@@ -92,6 +128,26 @@ public class CampaignsGatewayImpl implements CampaignsGateway {
                     .bodyValue(request)
                     .retrieve()
                     .toBodilessEntity()
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public MyCampaignSubscriptionResponse mySubscription(String campaignId, String userId) {
+        try {
+            return campaignsWebClient
+                    .get()
+                    .uri(uriBuilder ->
+                            uriBuilder
+                                    .path("/v1/campaigns/{campaignId}/subscriptions/me")
+                                    .queryParam("userId", userId)
+                                    .build(campaignId))
+                    .retrieve()
+                    .bodyToMono(MyCampaignSubscriptionResponse.class)
                     .block();
         } catch (WebClientResponseException ex) {
             throw gatewayHttpSupport.upstream(ex);

@@ -104,7 +104,7 @@ public class CampaignAllocationService {
 
                     CampaignAllocation saved = campaignAllocationRepository.save(allocation);
 
-                    coupon.setStatus(CouponStatus.ALLOCATED);
+                    coupon.setStatus(CouponStatus.ASSIGNED);
                     couponRepository.save(coupon);
 
                     PrizeDistributionRequestEvent event = new PrizeDistributionRequestEvent();

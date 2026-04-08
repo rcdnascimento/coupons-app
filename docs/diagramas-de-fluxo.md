@@ -175,7 +175,7 @@ sequenceDiagram
 
   Note over SCH: @Scheduled — campanhas ACTIVE com distributionAt vencido
   SCH->>CAS: allocate(campaignId, userId) por subscrição ACTIVE
-  CAS->>CAS: CampaignAllocation + cupom ALLOCATED (transação REQUIRES_NEW)
+  CAS->>CAS: CampaignAllocation + cupom ASSIGNED (transação REQUIRES_NEW)
   CAS->>K: prize.distribution.request
   K->>PR: consumir evento
   PR->>PR: deduplicar + PrizeDelivery DELIVERED

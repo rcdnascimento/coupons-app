@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { NotificationProvider } from "./context/NotificationProvider";
 import AuthenticatedLayout from "./layouts/AuthenticatedLayout";
 import AccountPage from "./pages/AccountPage";
+import AdminPage from "./pages/AdminPage";
 import CampaignPage from "./pages/CampaignPage";
 import CampaignWinnersPage from "./pages/CampaignWinnersPage";
 import HomePage from "./pages/HomePage";
@@ -25,6 +27,11 @@ export default function App() {
     saveSubscriptions(next);
   }
 
+  function replaceSubscriptions(next) {
+    setSubscriptions(next);
+    saveSubscriptions(next);
+  }
+
   function onLogout() {
     setAuth(null);
     saveAuth(null);
@@ -34,12 +41,14 @@ export default function App() {
     auth,
     subscriptions,
     onSubscribe,
+    replaceSubscriptions,
     onLogout
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <NotificationProvider>
+      <BrowserRouter>
+        <Routes>
         <Route
           path="/login"
           element={auth ? <Navigate to="/" replace /> : <LoginPage onAuth={onAuth} />}
@@ -58,9 +67,11 @@ export default function App() {
           <Route path="campanhas/:campaignId" element={<CampaignPage />} />
           <Route path="premios" element={<PrizesPage />} />
           <Route path="conta" element={<AccountPage />} />
+          <Route path="admin" element={<AdminPage />} />
         </Route>
         <Route path="*" element={<Navigate to={auth ? "/" : "/login"} replace />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </NotificationProvider>
   );
 }

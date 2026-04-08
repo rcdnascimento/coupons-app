@@ -137,6 +137,12 @@
   padding-top: 8px;
 }
 
+.menu-item--link {
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+}
+
 .menu-item {
   display: flex;
   width: 100%;

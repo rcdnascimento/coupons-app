@@ -1,11 +1,11 @@
-package com.coupons.bff.infra.resource.dto;
+package com.coupons.campaigns.infra.resource.dto;
 
 import java.time.Instant;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
-public class AddCouponToCampaignRequest {
+public class CreateCouponRequest {
 
     @NotBlank
     @Size(max = 128)
@@ -16,8 +16,6 @@ public class AddCouponToCampaignRequest {
 
     @Size(max = 255)
     private String title;
-
-    private Integer priority;
 
     public String getCode() {
         return code;
@@ -41,13 +39,5 @@ public class AddCouponToCampaignRequest {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Integer priority) {
-        this.priority = priority;
     }
 }

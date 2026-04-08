@@ -40,13 +40,34 @@ public class CampaignDistributionScheduler {
     @Scheduled(fixedDelayString = "${coupons.distribution.poll-ms:5000}")
     @Transactional
     public void runScheduledDistribution() {
+        Instant now = Instant.now();
         List<Campaign> dueCampaigns =
                 campaignRepository.findByStatusAndDistributionAtLessThanEqualOrderByDistributionAtAsc(
-                        CampaignStatus.ACTIVE, Instant.now());
+                        CampaignStatus.ACTIVE, now);
+        if (dueCampaigns.isEmpty()) {
+            return;
+        }
+
+        log.info(
+                "Distribuição: {} campanha(s) ACTIVE com distributionAt <= now ({}); a processar alocações e fecho.",
+                dueCampaigns.size(),
+                now);
+
         for (Campaign campaign : dueCampaigns) {
             List<CampaignSubscription> subscriptions =
                     campaignSubscriptionRepository.findByCampaignIdAndStatusOrderBySubscribedAtAsc(
                             campaign.getId(), CampaignSubscriptionStatus.ACTIVE);
+            int subCount = subscriptions.size();
+            long allocationsBefore = campaignAllocationRepository.countByCampaignId(campaign.getId());
+
+            log.info(
+                    "Campanha em distribuição: campaignId={}, title={}, distributionAt={}, inscricoesACTIVE={}, alocacoesExistentes={}",
+                    campaign.getId(),
+                    campaign.getTitle(),
+                    campaign.getDistributionAt(),
+                    subCount,
+                    allocationsBefore);
+
             boolean allAllocated = true;
             for (CampaignSubscription subscription : subscriptions) {
                 if (!campaignAllocationRepository.existsByCampaignIdAndUserId(
@@ -54,7 +75,11 @@ public class CampaignDistributionScheduler {
                     try {
                         campaignAllocationService.allocate(campaign.getId(), subscription.getUserId());
                     } catch (ConflictException ex) {
-                        // Sem cupons suficientes ou já alocado; segue para próximos utilizadores/campanhas.
+                        log.debug(
+                                "Alocação não efetuada (campaignId={}, userId={}): {}",
+                                campaign.getId(),
+                                subscription.getUserId(),
+                                ex.getMessage());
                     } catch (RuntimeException ex) {
                         log.warn(
                                 "Falha ao alocar/publicar prêmio (campaignId={}, userId={}): {}",
@@ -69,9 +94,24 @@ public class CampaignDistributionScheduler {
                 }
             }
 
+            long allocationsAfter = campaignAllocationRepository.countByCampaignId(campaign.getId());
+
             if (allAllocated) {
                 campaign.setStatus(CampaignStatus.CLOSED);
                 campaignRepository.save(campaign);
+                log.info(
+                        "Campanha CLOSED após distribuição: campaignId={}, title={}, alocacoes={}, inscricoesACTIVE={} (todos com prémio alocado ou sem inscrições).",
+                        campaign.getId(),
+                        campaign.getTitle(),
+                        allocationsAfter,
+                        subCount);
+            } else {
+                log.warn(
+                        "Campanha mantém-se ACTIVE: ainda faltam alocações (campaignId={}, title={}, alocacoes={}, inscricoesACTIVE={}). Verifique cupons ligados ao pool.",
+                        campaign.getId(),
+                        campaign.getTitle(),
+                        allocationsAfter,
+                        subCount);
             }
         }
     }

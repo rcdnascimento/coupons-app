@@ -12,19 +12,15 @@ import com.coupons.campaigns.infra.resource.dto.CampaignResponse;
 import com.coupons.campaigns.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.campaigns.infra.resource.dto.CampaignWinnersResponse;
 import com.coupons.campaigns.infra.resource.dto.CreateCampaignRequest;
+import com.coupons.campaigns.infra.resource.dto.MyCampaignSubscriptionResponse;
+import com.coupons.campaigns.infra.resource.dto.PatchCampaignRequest;
 import com.coupons.campaigns.infra.resource.dto.UserIdRequest;
 import com.coupons.campaigns.infra.resource.mapper.CampaignRestMapper;
 import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/v1/campaigns")
@@ -67,6 +63,16 @@ public class CampaignsResource {
         return campaignRestMapper.toCampaignResponseList(campaignManagementService.listCampaigns());
     }
 
+    @GetMapping("/{campaignId}")
+    public CampaignResponse get(@PathVariable UUID campaignId) {
+        return campaignRestMapper.toResponse(campaignManagementService.getById(campaignId));
+    }
+
+    @PatchMapping("/{campaignId}")
+    public CampaignResponse patch(@PathVariable UUID campaignId, @Valid @RequestBody PatchCampaignRequest request) {
+        return campaignRestMapper.toResponse(campaignManagementService.patchCampaign(campaignId, request));
+    }
+
     @PostMapping("/{campaignId}/coupons")
     public CampaignResponse addCoupon(
             @PathVariable UUID campaignId, @Valid @RequestBody AddCouponToCampaignRequest request) {
@@ -79,6 +85,12 @@ public class CampaignsResource {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void subscribe(@PathVariable UUID campaignId, @Valid @RequestBody UserIdRequest request) {
         campaignSubscriptionService.subscribe(campaignId, request.getUserId());
+    }
+
+    @GetMapping("/{campaignId}/subscriptions/me")
+    public MyCampaignSubscriptionResponse mySubscription(
+            @PathVariable UUID campaignId, @RequestParam("userId") UUID userId) {
+        return campaignSubscriptionService.getMySubscriptionStatus(campaignId, userId);
     }
 
     @PostMapping("/{campaignId}/allocations")

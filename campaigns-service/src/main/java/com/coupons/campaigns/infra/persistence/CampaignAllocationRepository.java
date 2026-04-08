@@ -10,6 +10,8 @@ public interface CampaignAllocationRepository extends JpaRepository<CampaignAllo
 
     List<CampaignAllocation> findByCampaignId(UUID campaignId);
 
+    long countByCampaignId(UUID campaignId);
+
     boolean existsByCampaignIdAndUserId(UUID campaignId, UUID userId);
 
     List<CampaignAllocation>

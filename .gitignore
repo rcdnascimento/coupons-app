@@ -20,3 +20,6 @@ web-app/dist/
 web-app/.vite/
 web-app/.env.local
 web-app/.env.*.local
+
+# Java
+*.class

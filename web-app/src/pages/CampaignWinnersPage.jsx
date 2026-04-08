@@ -5,23 +5,64 @@ import "./CampaignPage.css";
 
 export default function CampaignWinnersPage() {
   const { campaignId } = useParams();
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [winnersError, setWinnersError] = useState(false);
   const [campaign, setCampaign] = useState(null);
-  const [winners, setWinners] = useState(null);
+  const [winners, setWinners] = useState(undefined);
 
   useEffect(() => {
+    setLoadFailed(false);
+    setWinnersError(false);
     async function load() {
-      const all = await listCampaigns();
-      const c = all.find((item) => item.id === campaignId) || null;
-      setCampaign(c);
-      if (!c) {
+      try {
+        const all = await listCampaigns();
+        const c = all.find((item) => item.id === campaignId) || null;
+        setCampaign(c);
+        if (!c) {
+          setWinners(null);
+          return;
+        }
+        try {
+          const w = await getCampaignWinners(campaignId);
+          setWinners(w);
+        } catch {
+          setWinnersError(true);
+          setWinners(null);
+        }
+      } catch {
+        setLoadFailed(true);
+        setCampaign(null);
         setWinners(null);
-        return;
       }
-      const w = await getCampaignWinners(campaignId).catch(() => ({ entries: [] }));
-      setWinners(w);
     }
     load();
   }, [campaignId]);
+
+  if (loadFailed) {
+    return (
+      <main className="page campaign-page">
+        <div className="campaign-detail">
+          <Link to="/" className="campaign-back-btn" aria-label="Voltar">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden={true}
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </Link>
+          <p className="campaign-detail__empty">Nao foi possivel carregar as campanhas.</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!campaign) {
     return (
@@ -75,7 +116,11 @@ export default function CampaignWinnersPage() {
         <p className="muted campaign-detail__date">{campaign.title}</p>
 
         <div className="campaign-detail__winners">
-          {!winners?.entries?.length ? (
+          {winners === undefined && !winnersError ? (
+            <p className="muted">...</p>
+          ) : winnersError ? (
+            <p className="muted">Nao foi possivel carregar a lista de vencedores.</p>
+          ) : !winners?.entries?.length ? (
             <p className="muted">Nenhum vencedor divulgado ainda.</p>
           ) : (
             <ul className="campaign-detail__winner-list">

@@ -7,7 +7,9 @@ import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnerEntry;
 import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
+import com.coupons.bff.infra.resource.dto.MyCampaignSubscriptionResponse;
 import com.coupons.bff.infra.resource.dto.CreateCampaignRequest;
+import com.coupons.bff.infra.resource.dto.PatchCampaignRequest;
 import com.coupons.bff.infra.resource.dto.ProfileResponse;
 import com.coupons.bff.infra.resource.dto.UserIdRequest;
 import java.util.HashMap;
@@ -18,9 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +51,20 @@ public class CampaignsProxyResource {
         return ResponseEntity.ok(campaignsGateway.listCampaigns());
     }
 
+    @GetMapping(value = "/{campaignId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CampaignResponse> getOne(@PathVariable String campaignId) {
+        return ResponseEntity.ok(campaignsGateway.getCampaign(campaignId));
+    }
+
+    @PatchMapping(
+            value = "/{campaignId}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CampaignResponse> patch(
+            @PathVariable String campaignId, @Valid @RequestBody PatchCampaignRequest body) {
+        return ResponseEntity.ok(campaignsGateway.patchCampaign(campaignId, body));
+    }
+
     @PostMapping(value = "/{campaignId}/coupons", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CampaignResponse> addCoupon(
             @PathVariable String campaignId, @Valid @RequestBody AddCouponToCampaignRequest body) {
@@ -57,6 +75,14 @@ public class CampaignsProxyResource {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void subscribe(@PathVariable String campaignId, @Valid @RequestBody UserIdRequest body) {
         campaignsGateway.subscribe(campaignId, body);
+    }
+
+    @GetMapping(
+            value = "/{campaignId}/subscriptions/me",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MyCampaignSubscriptionResponse> mySubscription(
+            @PathVariable String campaignId, @RequestParam("userId") String userId) {
+        return ResponseEntity.ok(campaignsGateway.mySubscription(campaignId, userId));
     }
 
     @GetMapping(value = "/{campaignId}/summary", produces = MediaType.APPLICATION_JSON_VALUE)
