@@ -28,6 +28,9 @@ public class CampaignRestMapper {
         Coupon coupon = new Coupon();
         coupon.setCode(request.getCode().trim());
         coupon.setExpiresAt(request.getExpiresAt());
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            coupon.setTitle(request.getTitle().trim());
+        }
         return coupon;
     }
 

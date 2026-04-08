@@ -4,5 +4,5 @@ import java.util.UUID;
 
 public interface ProfileGateway {
 
-    void createProfile(UUID userId, String displayName, String timezone);
+    void createProfile(UUID userId, String displayName, String timezone, String referralCode);
 }

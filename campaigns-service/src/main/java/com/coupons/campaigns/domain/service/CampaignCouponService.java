@@ -38,6 +38,11 @@ public class CampaignCouponService {
                         .findByCode(code)
                         .orElseGet(() -> createCoupon(code, couponDraft.getExpiresAt()));
 
+        if (couponDraft.getTitle() != null && !couponDraft.getTitle().isBlank()) {
+            coupon.setTitle(couponDraft.getTitle().trim());
+            coupon = couponRepository.save(coupon);
+        }
+
         if (campaignCouponRepository.existsByCampaignIdAndCouponId(campaignId, coupon.getId())) {
             throw new ConflictException("Cupom já vinculado à campanha");
         }

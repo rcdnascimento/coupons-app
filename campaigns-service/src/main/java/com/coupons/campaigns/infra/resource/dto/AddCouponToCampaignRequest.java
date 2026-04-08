@@ -14,6 +14,10 @@ public class AddCouponToCampaignRequest {
     @NotNull
     private Instant expiresAt;
 
+    /** Título público do prémio/cupom (opcional). */
+    @Size(max = 255)
+    private String title;
+
     private Integer priority;
 
     public String getCode() {
@@ -30,6 +34,14 @@ public class AddCouponToCampaignRequest {
 
     public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public Integer getPriority() {

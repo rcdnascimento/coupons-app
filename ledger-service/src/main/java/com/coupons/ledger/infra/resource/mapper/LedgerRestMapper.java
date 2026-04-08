@@ -33,6 +33,19 @@ public class LedgerRestMapper {
         return line;
     }
 
+    /** Crédito por bónus de indicação; {@code otherPartyUserId} identifica o outro lado (referidor ou indicado). */
+    public LedgerEntry toReferralBonusLine(
+            UUID userId, int amount, String idempotencyKey, UUID otherPartyUserId) {
+        LedgerEntry line = new LedgerEntry();
+        line.setUserId(userId);
+        line.setAmount(Math.abs(amount));
+        line.setReason("REFERRAL_BONUS");
+        line.setRefType("REFERRAL_SIGNUP");
+        line.setRefId(otherPartyUserId.toString());
+        line.setIdempotencyKey(idempotencyKey.trim());
+        return line;
+    }
+
     public EntryResponse toResponse(LedgerEntry entry) {
         return EntryResponse.from(entry);
     }

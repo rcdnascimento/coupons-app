@@ -26,6 +26,10 @@ public class Coupon {
     @Column(nullable = false, unique = true, length = 128)
     private String code;
 
+    /** Título exibível ao utilizador (sem revelar o código). */
+    @Column(name = "title", length = 255)
+    private String title;
+
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
@@ -60,6 +64,14 @@ public class Coupon {
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public Instant getExpiresAt() {

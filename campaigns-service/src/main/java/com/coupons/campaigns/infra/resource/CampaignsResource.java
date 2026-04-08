@@ -3,10 +3,14 @@ package com.coupons.campaigns.infra.resource;
 import com.coupons.campaigns.domain.service.CampaignAllocationService;
 import com.coupons.campaigns.domain.service.CampaignCouponService;
 import com.coupons.campaigns.domain.service.CampaignManagementService;
+import com.coupons.campaigns.domain.service.CampaignSummaryService;
 import com.coupons.campaigns.domain.service.CampaignSubscriptionService;
+import com.coupons.campaigns.domain.service.CampaignWinnersService;
 import com.coupons.campaigns.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.campaigns.infra.resource.dto.AllocationResponse;
 import com.coupons.campaigns.infra.resource.dto.CampaignResponse;
+import com.coupons.campaigns.infra.resource.dto.CampaignSummaryResponse;
+import com.coupons.campaigns.infra.resource.dto.CampaignWinnersResponse;
 import com.coupons.campaigns.infra.resource.dto.CreateCampaignRequest;
 import com.coupons.campaigns.infra.resource.dto.UserIdRequest;
 import com.coupons.campaigns.infra.resource.mapper.CampaignRestMapper;
@@ -29,6 +33,8 @@ public class CampaignsResource {
     private final CampaignManagementService campaignManagementService;
     private final CampaignCouponService campaignCouponService;
     private final CampaignSubscriptionService campaignSubscriptionService;
+    private final CampaignSummaryService campaignSummaryService;
+    private final CampaignWinnersService campaignWinnersService;
     private final CampaignAllocationService campaignAllocationService;
     private final CampaignRestMapper campaignRestMapper;
 
@@ -36,11 +42,15 @@ public class CampaignsResource {
             CampaignManagementService campaignManagementService,
             CampaignCouponService campaignCouponService,
             CampaignSubscriptionService campaignSubscriptionService,
+            CampaignSummaryService campaignSummaryService,
+            CampaignWinnersService campaignWinnersService,
             CampaignAllocationService campaignAllocationService,
             CampaignRestMapper campaignRestMapper) {
         this.campaignManagementService = campaignManagementService;
         this.campaignCouponService = campaignCouponService;
         this.campaignSubscriptionService = campaignSubscriptionService;
+        this.campaignSummaryService = campaignSummaryService;
+        this.campaignWinnersService = campaignWinnersService;
         this.campaignAllocationService = campaignAllocationService;
         this.campaignRestMapper = campaignRestMapper;
     }
@@ -75,5 +85,15 @@ public class CampaignsResource {
     public AllocationResponse allocate(@PathVariable UUID campaignId, @Valid @RequestBody UserIdRequest request) {
         return campaignRestMapper.toResponse(
                 campaignAllocationService.allocate(campaignId, request.getUserId()));
+    }
+
+    @GetMapping("/{campaignId}/summary")
+    public CampaignSummaryResponse summary(@PathVariable UUID campaignId) {
+        return campaignSummaryService.summary(campaignId);
+    }
+
+    @GetMapping("/{campaignId}/winners")
+    public CampaignWinnersResponse winners(@PathVariable UUID campaignId) {
+        return campaignWinnersService.winners(campaignId);
     }
 }

@@ -16,6 +16,15 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+coupons:
+  kafka:
+    topic-referral-bonus-granted: ${KAFKA_TOPIC_REFERRAL_BONUS_GRANTED:referral.bonus.granted}
 
 management:
   endpoints:

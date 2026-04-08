@@ -4,6 +4,8 @@ import com.coupons.bff.infra.gateway.campaigns.CampaignsGateway;
 import com.coupons.bff.infra.gateway.support.GatewayHttpSupport;
 import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
+import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
+import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
 import com.coupons.bff.infra.resource.dto.CreateCampaignRequest;
 import com.coupons.bff.infra.resource.dto.UserIdRequest;
 import java.util.List;
@@ -90,6 +92,38 @@ public class CampaignsGatewayImpl implements CampaignsGateway {
                     .bodyValue(request)
                     .retrieve()
                     .toBodilessEntity()
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public CampaignSummaryResponse summary(String campaignId) {
+        try {
+            return campaignsWebClient
+                    .get()
+                    .uri("/v1/campaigns/{campaignId}/summary", campaignId)
+                    .retrieve()
+                    .bodyToMono(CampaignSummaryResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public CampaignWinnersResponse winners(String campaignId) {
+        try {
+            return campaignsWebClient
+                    .get()
+                    .uri("/v1/campaigns/{campaignId}/winners", campaignId)
+                    .retrieve()
+                    .bodyToMono(CampaignWinnersResponse.class)
                     .block();
         } catch (WebClientResponseException ex) {
             throw gatewayHttpSupport.upstream(ex);

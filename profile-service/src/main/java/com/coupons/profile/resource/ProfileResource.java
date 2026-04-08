@@ -43,7 +43,8 @@ public class ProfileResource {
     @ResponseStatus(HttpStatus.CREATED)
     public ProfileResponse create(@Valid @RequestBody CreateProfileRequest request) {
         return profileRestMapper.toResponse(
-                profileCreationService.create(profileRestMapper.toNewProfile(request)));
+                profileCreationService.create(
+                        profileRestMapper.toNewProfile(request), request.getReferralCode()));
     }
 
     @GetMapping("/{userId}")

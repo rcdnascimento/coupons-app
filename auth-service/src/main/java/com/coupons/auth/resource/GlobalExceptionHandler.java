@@ -2,6 +2,7 @@ package com.coupons.auth.infra.resource;
 
 import com.coupons.auth.domain.exception.EmailAlreadyInUseException;
 import com.coupons.auth.domain.exception.InvalidCredentialsException;
+import com.coupons.auth.domain.exception.InvalidReferralCodeException;
 import com.coupons.auth.domain.exception.ProfileCreationFailedException;
 import com.coupons.auth.infra.resource.dto.ErrorResponse;
 import java.util.stream.Collectors;
@@ -22,6 +23,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> unauthorized(InvalidCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidReferralCodeException.class)
+    public ResponseEntity<ErrorResponse> badReferral(InvalidReferralCodeException ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

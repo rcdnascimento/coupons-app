@@ -1,0 +1,53 @@
+/* Lista de premios (sem card wrapper) */
+
+.prizes-page {
+  overflow: visible;
+}
+
+.prizes-page__header {
+  margin-bottom: 36px;
+}
+
+.prizes-page__title {
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.prizes-page__empty {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.prizes-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.prizes-page__item {
+  margin: 0;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.prizes-page__item:last-child {
+  border-bottom: none;
+}
+
+.prizes-page__item-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.prizes-page__item-meta {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.prizes-page__item-meta + .prizes-page__item-meta {
+  margin-top: 4px;
+}

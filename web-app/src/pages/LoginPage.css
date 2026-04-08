@@ -1,0 +1,105 @@
+/* Login: marca no topo; conteudo em fluxo vertical (sem centrar na altura) */
+
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 16px;
+}
+
+.login-page.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  padding-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.login-page.auth-page {
+  padding-top: 0;
+  gap: 0;
+}
+
+.login-page__header {
+  flex-shrink: 0;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: 32px;
+  width: 100%;
+}
+
+.login-page__brand.brand {
+  font-size: 2.375rem;
+  line-height: 1.15;
+}
+
+.login-page__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 39px 0 47px;
+  min-height: 0;
+}
+
+.login-page__center {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.login-page__intro {
+  display: grid;
+  gap: 14px;
+}
+
+.login-page__intro-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.login-page__intro-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.auth-page__brand {
+  margin: 0;
+}
+
+.auth-page form {
+  margin-top: 0;
+}
+
+.auth-page__register-line {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.auth-page__register-line > span {
+  flex-shrink: 0;
+}
+
+.auth-page__register-link {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-page__register-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}

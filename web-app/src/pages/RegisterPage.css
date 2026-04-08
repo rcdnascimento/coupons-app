@@ -1,0 +1,90 @@
+/* Registo: marca no topo; fluxo vertical como o login (sem centrar na altura) */
+
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 16px;
+}
+
+.register-page.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  padding-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.register-page.auth-page {
+  padding-top: 0;
+  gap: 0;
+}
+
+.register-page__header {
+  flex-shrink: 0;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: 32px;
+  width: 100%;
+}
+
+.register-page__brand.brand {
+  font-size: 2.375rem;
+  line-height: 1.15;
+}
+
+.register-page__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 39px 0 47px;
+  min-height: 0;
+}
+
+.register-page__center {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.auth-page__brand {
+  margin: 0;
+}
+
+.register-page__intro {
+  display: grid;
+  gap: 14px;
+}
+
+.register-page__intro-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.register-page__intro-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.auth-page form {
+  margin-top: 0;
+}
+
+.register-page .register-page__center a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.register-page .register-page__center a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}

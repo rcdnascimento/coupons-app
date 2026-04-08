@@ -1,8 +1,10 @@
 package com.coupons.profile.infra.resource;
 
+import com.coupons.profile.domain.exception.InvalidReferralCodeException;
 import com.coupons.profile.domain.exception.NothingToUpdateException;
 import com.coupons.profile.domain.exception.ProfileAlreadyExistsException;
 import com.coupons.profile.domain.exception.ProfileNotFoundException;
+import com.coupons.profile.domain.exception.ReferralCodeAlreadyUsedException;
 import com.coupons.profile.infra.resource.dto.ErrorResponse;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NothingToUpdateException.class)
     public ResponseEntity<ErrorResponse> badRequest(NothingToUpdateException ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler({InvalidReferralCodeException.class, ReferralCodeAlreadyUsedException.class})
+    public ResponseEntity<ErrorResponse> badReferral(RuntimeException ex) {
         return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
     }
 

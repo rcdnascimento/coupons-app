@@ -15,4 +15,6 @@ public interface CampaignCouponRepository extends JpaRepository<CampaignCoupon, 
             "SELECT cc.couponId FROM CampaignCoupon cc WHERE cc.campaignId = :campaignId "
                     + "AND cc.couponId NOT IN (SELECT a.couponId FROM CampaignAllocation a)")
     List<UUID> findLinkedCouponIdsNotYetAllocated(@Param("campaignId") UUID campaignId);
+
+    List<CampaignCoupon> findByCampaignIdOrderByPriorityAsc(UUID campaignId);
 }

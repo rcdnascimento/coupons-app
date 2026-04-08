@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CampaignAllocationRepository extends JpaRepository<CampaignAllocation, UUID> {
 
+    List<CampaignAllocation> findByCampaignId(UUID campaignId);
+
     boolean existsByCampaignIdAndUserId(UUID campaignId, UUID userId);
 
     List<CampaignAllocation>

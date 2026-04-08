@@ -1,0 +1,607 @@
+/* Base: tokens, tipografia, formulários e blocos reutilizáveis */
+
+@font-face {
+  font-family: "Avenir Roman";
+  src: url("../fonts/AvenirLTStd-Roman.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Avenir Book";
+  src: url("../fonts/AvenirLTStd-Book.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Avenir Heavy";
+  src: url("../fonts/AvenirLTStd-Black.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --gray-900: #1a1a1a;
+  --gray-800: #2e2e2e;
+  --gray-700: #454545;
+  --gray-600: #5c5c5c;
+  --gray-500: #737373;
+  --gray-400: #8a8a8a;
+  --gray-300: #b0b0b0;
+  --gray-200: #d4d4d4;
+  --gray-100: #e5e5e5;
+  --gray-50: #fafafa;
+  --gray-40: #fafafa;
+
+  --white: #ffffff;
+  --black: #000000;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-active: #1e40af;
+  --focus-ring: rgba(0, 0, 0, 0.06);
+
+  --page-bg: #ffffff;
+  --surface: #ffffff;
+  --border-subtle: var(--gray-100);
+  --text: #111111;
+  --text-muted: var(--gray-600);
+
+  --radius-card: 12px;
+  --radius-input: 8px;
+  --radius-button: 14px;
+  --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.06);
+
+  /* Altura única para botões e CTAs (próx. de 54px em lorie-web) */
+  --btn-height: 54px;
+
+  --carousel-inset-start: 20px;
+  /* Espaço visível à direita do card atual = “pontinha” do seguinte */
+  --carousel-card-peek: 40px;
+
+  --bottom-nav-height: 94px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* ~18px no root 16px; textos de UI no estilo de apps como lorie-web (16–20px) */
+  font-size: 112.5%;
+}
+
+#root {
+  overflow: visible;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Roman", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--page-bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Logo textual Coupons (topbar, login, cadastro) */
+.brand {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.brand-coup {
+  color: #15145d;
+}
+
+.brand-ons {
+  color: #0d45f0;
+}
+
+.app-authenticated .page {
+  padding-bottom: calc(24px + var(--bottom-nav-height) + env(safe-area-inset-bottom, 0));
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 18px 32px;
+  overflow: visible;
+}
+
+.page:not(.home-page):not(.login-page):not(.register-page) {
+  padding-top: 46px;
+}
+
+.card {
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: 20px 18px;
+  margin: 0 4px 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.944rem;
+}
+
+.tiny {
+  font-size: 0.833rem;
+  color: var(--text-muted);
+}
+
+form {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.778rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-600);
+  padding-left: 2px;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-input);
+  padding: 16px 18px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--white);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input::placeholder {
+  color: var(--gray-300);
+  font-size: 0.944rem;
+  font-weight: 400;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--gray-400);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+button {
+  border: none;
+  border-radius: var(--radius-button);
+  padding: 0 18px;
+  min-height: var(--btn-height);
+  height: var(--btn-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primary {
+  background-color: var(--primary);
+  color: var(--white);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.primary:active:not(:disabled) {
+  background-color: var(--primary-active);
+}
+
+.secondary {
+  background-color: var(--white);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--primary);
+  color: var(--white);
+}
+
+.ghost {
+  background-color: var(--white);
+  border: 1px solid var(--gray-100);
+  color: var(--text);
+  font-weight: 500;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--gray-50);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.row h2 {
+  flex: 1;
+}
+
+/* Inset horizontal no contentor de scroll — padding na track falha com snap/edge em alguns cases */
+.carousel {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline-start: var(--carousel-inset-start);
+  scroll-padding-inline-end: var(--carousel-card-peek);
+  margin: 0 -18px;
+  padding-block-end: 4px;
+  padding-inline-start: var(--carousel-inset-start);
+  padding-inline-end: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.carousel-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  padding: 20px 18px 24px 0;
+}
+
+.carousel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.campaign-card {
+  flex: 0 0
+    min(
+      340px,
+      calc(100vw - var(--carousel-inset-start) - var(--carousel-card-peek))
+    );
+  max-width: 340px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-card);
+  padding: 18px 16px;
+  display: grid;
+  gap: 12px;
+  scroll-snap-align: start;
+  box-shadow: var(--shadow-soft);
+}
+
+.campaign-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.campaign-card__time {
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.campaign-card__distribution {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.campaign-card--clickable {
+  cursor: pointer;
+}
+
+.campaign-card > .primary,
+.campaign-card > .ok {
+  margin-top: 50px;
+}
+
+.campaign-card > .secondary {
+  margin-top: 8px;
+}
+
+.badge {
+  width: fit-content;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  background: var(--gray-50);
+  color: var(--text);
+  border: 0;
+}
+
+.badge.aberta,
+.badge.abre_em_breve,
+.badge.fechada {
+  background: var(--gray-50);
+  color: var(--text);
+  border: 0;
+}
+
+.countdown {
+  font-weight: 700;
+  font-family: "Avenir Heavy", "Avenir Roman", sans-serif;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--gray-50);
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.ok {
+  color: var(--text);
+  font-size: 0.944rem;
+  font-weight: 600;
+}
+
+.error {
+  color: var(--text);
+  margin-top: 10px;
+  font-size: 0.944rem;
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border: 0;
+  border-radius: 8px;
+}
+
+.result {
+  background: var(--gray-40);
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.944rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.block {
+  background: var(--gray-40);
+  border-radius: 10px;
+  border: 0;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.block .muted {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
+  border-radius: 12px;
+  padding: 0 18px;
+  min-height: var(--btn-height);
+  height: var(--btn-height);
+  box-sizing: border-box;
+  font-weight: 600;
+  font-size: 1rem;
+  background: var(--white);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.link-btn:hover {
+  background: var(--primary);
+  color: var(--white);
+}
+
+@media (min-width: 768px) {
+  :root {
+    /* Mesmo inset horizontal em todas as rotas (home, campanhas, auth, etc.). */
+    --page-gutter: clamp(28px, 5vw, 72px);
+    /* Inputs e filas de CTA não esticam por todo o viewport. */
+    --control-max-width: min(28rem, 100%);
+    --control-min-width: 400px;
+    /* Só login/registo: largura fixa da coluna e dos controlos (≥768px). */
+    --auth-layout-width: 452px;
+  }
+
+  form {
+    max-width: var(--control-max-width);
+    min-width: min(var(--control-min-width), 100%);
+  }
+
+  input,
+  textarea,
+  select {
+    min-width: min(var(--control-min-width), 100%);
+  }
+
+  /* Corpo login/registo: coluna 452px centrada; cabeçalho com logo fica largura total, alinhado à esquerda. */
+  .page.login-page > .login-page__body,
+  .page.register-page > .register-page__body {
+    width: var(--auth-layout-width);
+    max-width: 100%;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
+  .page.login-page > .login-page__header,
+  .page.register-page > .register-page__header {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .login-page__intro,
+  .register-page__intro {
+    text-align: center;
+  }
+
+  .login-page .auth-page__register-line {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .register-page__center > .muted.tiny {
+    text-align: center;
+  }
+
+  .auth-page form {
+    width: var(--auth-layout-width);
+    max-width: 100%;
+    min-width: unset;
+    margin-inline: 0;
+    box-sizing: border-box;
+  }
+
+  .auth-page input,
+  .auth-page textarea,
+  .auth-page select {
+    width: var(--auth-layout-width);
+    max-width: 100%;
+    min-width: unset;
+    box-sizing: border-box;
+  }
+
+  .auth-page button[type="submit"] {
+    width: var(--auth-layout-width);
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-authenticated .page {
+    padding-bottom: calc(32px + var(--bottom-nav-height) + env(safe-area-inset-bottom, 0));
+  }
+
+  /* Largura do viewport com inset horizontal — evita coluna 840px centrada. */
+  .page {
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+    --carousel-inset-start: var(--page-gutter);
+    padding: 28px var(--page-gutter) 40px;
+    overflow: visible;
+  }
+
+  .page:not(.home-page):not(.login-page):not(.register-page) {
+    padding-top: 54px;
+  }
+
+  .carousel {
+    margin-left: calc(-1 * var(--page-gutter));
+    margin-right: calc(-1 * var(--page-gutter));
+    scroll-padding-inline-start: var(--carousel-inset-start);
+    scroll-padding-inline-end: var(--carousel-card-peek);
+    padding-inline-start: var(--carousel-inset-start);
+  }
+
+  .carousel-track {
+    padding: 20px var(--page-gutter) 24px 0;
+  }
+
+  .campaign-card {
+    flex: 0 0
+      min(
+        340px,
+        calc(100vw - var(--carousel-inset-start) - var(--carousel-card-peek))
+      );
+  }
+}
+
+@media (min-width: 768px) and (hover: hover) {
+  .campaign-card--clickable {
+    transition:
+      box-shadow 0.22s ease,
+      transform 0.22s ease;
+  }
+
+  .campaign-card--clickable:hover {
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+  }
+
+  .campaign-card--clickable:active {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+  }
+}

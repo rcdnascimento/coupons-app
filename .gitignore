@@ -13,3 +13,10 @@ build/
 */build/*
 */out/*
 */bin/*
+
+# Frontend (web-app)
+web-app/node_modules/
+web-app/dist/
+web-app/.vite/
+web-app/.env.local
+web-app/.env.*.local

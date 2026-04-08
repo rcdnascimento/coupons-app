@@ -24,4 +24,16 @@ public class WebClientConfig {
             WebClient.Builder builder, @Value("${coupons.services.prizes-url}") String prizesBaseUrl) {
         return builder.baseUrl(prizesBaseUrl).build();
     }
+
+    @Bean
+    public WebClient profileWebClient(
+            WebClient.Builder builder, @Value("${coupons.services.profile-url}") String profileBaseUrl) {
+        return builder.baseUrl(profileBaseUrl).build();
+    }
+
+    @Bean
+    public WebClient ledgerWebClient(
+            WebClient.Builder builder, @Value("${coupons.services.ledger-url}") String ledgerBaseUrl) {
+        return builder.baseUrl(ledgerBaseUrl).build();
+    }
 }

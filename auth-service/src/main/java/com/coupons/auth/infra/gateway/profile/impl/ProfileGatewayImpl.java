@@ -1,5 +1,6 @@
 package com.coupons.auth.infra.gateway.profile.impl;
 
+import com.coupons.auth.domain.exception.InvalidReferralCodeException;
 import com.coupons.auth.domain.exception.ProfileCreationFailedException;
 import com.coupons.auth.infra.gateway.profile.ProfileGateway;
 import com.coupons.auth.infra.gateway.profile.dto.ProfileCreateRequest;
@@ -27,8 +28,8 @@ public class ProfileGatewayImpl implements ProfileGateway {
     }
 
     @Override
-    public void createProfile(UUID userId, String displayName, String timezone) {
-        ProfileCreateRequest request = new ProfileCreateRequest(userId, displayName, timezone);
+    public void createProfile(UUID userId, String displayName, String timezone, String referralCode) {
+        ProfileCreateRequest request = new ProfileCreateRequest(userId, displayName, timezone, referralCode);
         URI uri = URI.create(profileBaseUrl + "/v1/profiles");
         try {
             ResponseEntity<ProfileRemoteResponse> resp =
@@ -40,6 +41,10 @@ public class ProfileGatewayImpl implements ProfileGateway {
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.CONFLICT) {
                 return;
+            }
+            if (ex.getStatusCode() == HttpStatus.BAD_REQUEST) {
+                throw new InvalidReferralCodeException(
+                        "Código de indicação inválido ou já utilizado.", ex);
             }
             throw new ProfileCreationFailedException(
                     "Falha ao criar profile via profile-service. Status=" + ex.getStatusCode(), ex);

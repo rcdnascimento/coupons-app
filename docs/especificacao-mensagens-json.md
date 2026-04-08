@@ -12,15 +12,17 @@ As portas indicadas são as de `application.yml` por defeito; podem ser alterada
 
 Entrada recomendada para clientes externos. Prefixo base: sem path global extra além dos indicados.
 
-| Método | Caminho | Corpo de pedido | Resposta de sucesso |
-|--------|---------|-----------------|---------------------|
-| `POST` | `/api/auth/register` | [RegisterRequest](#registerrequest--loginrequest-auth--bff) | `201` — [AuthTokenResponse](#authtokenresponse-bff) |
-| `POST` | `/api/auth/login` | [LoginRequest](#registerrequest--loginrequest-auth--bff) | `200` — [AuthTokenResponse](#authtokenresponse-bff) |
-| `POST` | `/api/campaigns` | [CreateCampaignRequest](#createcampaignrequest) | `201` — [CampaignResponse](#campaignresponse) |
-| `GET` | `/api/campaigns` | — | `200` — array de [CampaignResponse](#campaignresponse) |
-| `POST` | `/api/campaigns/{campaignId}/coupons` | [AddCouponToCampaignRequest](#addcoupontocampaignrequest) | `200` — [CampaignResponse](#campaignresponse) |
-| `POST` | `/api/campaigns/{campaignId}/subscriptions` | [UserIdRequest](#useridrequest) | `204` — sem corpo |
-| `GET` | `/api/prizes/users/{userId}?campaignId=` (opcional) | — | `200` — array de [PrizeDeliveryResponse](#prizedeliveryresponse) |
+
+| Método | Caminho                                             | Corpo de pedido                                             | Resposta de sucesso                                              |
+| ------ | --------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| `POST` | `/api/auth/register`                                | [RegisterRequest](#registerrequest--loginrequest-auth--bff) | `201` — [AuthTokenResponse](#authtokenresponse-bff)              |
+| `POST` | `/api/auth/login`                                   | [LoginRequest](#registerrequest--loginrequest-auth--bff)    | `200` — [AuthTokenResponse](#authtokenresponse-bff)              |
+| `POST` | `/api/campaigns`                                    | [CreateCampaignRequest](#createcampaignrequest)             | `201` — [CampaignResponse](#campaignresponse)                    |
+| `GET`  | `/api/campaigns`                                    | —                                                           | `200` — array de [CampaignResponse](#campaignresponse)           |
+| `POST` | `/api/campaigns/{campaignId}/coupons`               | [AddCouponToCampaignRequest](#addcoupontocampaignrequest)   | `200` — [CampaignResponse](#campaignresponse)                    |
+| `POST` | `/api/campaigns/{campaignId}/subscriptions`         | [UserIdRequest](#useridrequest)                             | `204` — sem corpo                                                |
+| `GET`  | `/api/prizes/users/{userId}?campaignId=` (opcional) | —                                                           | `200` — array de [PrizeDeliveryResponse](#prizedeliveryresponse) |
+
 
 **Nota:** O BFF **não** expõe `POST /.../allocations`; essa operação existe apenas no `campaigns-service` (ver abaixo).
 
@@ -41,10 +43,12 @@ Entrada recomendada para clientes externos. Prefixo base: sem path global extra 
 
 Base: `/v1/auth`
 
-| Método | Caminho | Corpo | Resposta |
-|--------|---------|-------|----------|
+
+| Método | Caminho             | Corpo                                                       | Resposta                                           |
+| ------ | ------------------- | ----------------------------------------------------------- | -------------------------------------------------- |
 | `POST` | `/v1/auth/register` | [RegisterRequest](#registerrequest--loginrequest-auth--bff) | `201` — [AuthResponse](#authresponse-auth-service) |
-| `POST` | `/v1/auth/login` | [LoginRequest](#registerrequest--loginrequest-auth--bff) | `200` — [AuthResponse](#authresponse-auth-service) |
+| `POST` | `/v1/auth/login`    | [LoginRequest](#registerrequest--loginrequest-auth--bff)    | `200` — [AuthResponse](#authresponse-auth-service) |
+
 
 #### RegisterRequest / LoginRequest (auth + BFF)
 
@@ -85,11 +89,13 @@ Base: `/v1/auth`
 
 Base: `/v1/profiles`
 
-| Método | Caminho | Corpo | Resposta |
-|--------|---------|-------|----------|
-| `POST` | `/v1/profiles` | [CreateProfileRequest](#createprofilerequest) | `201` — [ProfileResponse](#profileresponse) |
-| `GET` | `/v1/profiles/{userId}` | — | `200` — [ProfileResponse](#profileresponse) |
-| `PUT` | `/v1/profiles/{userId}` | [UpdateProfileRequest](#updateprofilerequest) | `200` — [ProfileResponse](#profileresponse) |
+
+| Método | Caminho                 | Corpo                                         | Resposta                                    |
+| ------ | ----------------------- | --------------------------------------------- | ------------------------------------------- |
+| `POST` | `/v1/profiles`          | [CreateProfileRequest](#createprofilerequest) | `201` — [ProfileResponse](#profileresponse) |
+| `GET`  | `/v1/profiles/{userId}` | —                                             | `200` — [ProfileResponse](#profileresponse) |
+| `PUT`  | `/v1/profiles/{userId}` | [UpdateProfileRequest](#updateprofilerequest) | `200` — [ProfileResponse](#profileresponse) |
+
 
 #### CreateProfileRequest
 
@@ -97,9 +103,12 @@ Base: `/v1/profiles`
 {
   "userId": "uuid",
   "displayName": "string",
-  "timezone": "string (opcional)"
+  "timezone": "string (opcional)",
+  "referralCode": "string (opcional, código de outro perfil; validação síncrona)"
 }
 ```
+
+Se `referralCode` for enviado e for inválido ou já tiver sido usado noutro registo, o profile devolve `400` (corpo com `error`, ver secção 1.7) e o auth propaga o mesmo efeito no registo (o utilizador **não** fica criado).
 
 #### UpdateProfileRequest
 
@@ -128,13 +137,15 @@ Base: `/v1/profiles`
 
 Base: `/v1/campaigns`
 
-| Método | Caminho | Corpo | Resposta |
-|--------|---------|-------|----------|
-| `POST` | `/v1/campaigns` | [CreateCampaignRequest](#createcampaignrequest) | `201` — [CampaignResponse](#campaignresponse) |
-| `GET` | `/v1/campaigns` | — | `200` — array de [CampaignResponse](#campaignresponse) |
-| `POST` | `/v1/campaigns/{campaignId}/coupons` | [AddCouponToCampaignRequest](#addcoupontocampaignrequest) | `200` — [CampaignResponse](#campaignresponse) |
-| `POST` | `/v1/campaigns/{campaignId}/subscriptions` | [UserIdRequest](#useridrequest) | `204` — sem corpo |
-| `POST` | `/v1/campaigns/{campaignId}/allocations` | [UserIdRequest](#useridrequest) | `200` — [AllocationResponse](#allocationresponse) |
+
+| Método | Caminho                                    | Corpo                                                     | Resposta                                               |
+| ------ | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------ |
+| `POST` | `/v1/campaigns`                            | [CreateCampaignRequest](#createcampaignrequest)           | `201` — [CampaignResponse](#campaignresponse)          |
+| `GET`  | `/v1/campaigns`                            | —                                                         | `200` — array de [CampaignResponse](#campaignresponse) |
+| `POST` | `/v1/campaigns/{campaignId}/coupons`       | [AddCouponToCampaignRequest](#addcoupontocampaignrequest) | `200` — [CampaignResponse](#campaignresponse)          |
+| `POST` | `/v1/campaigns/{campaignId}/subscriptions` | [UserIdRequest](#useridrequest)                           | `204` — sem corpo                                      |
+| `POST` | `/v1/campaigns/{campaignId}/allocations`   | [UserIdRequest](#useridrequest)                           | `200` — [AllocationResponse](#allocationresponse)      |
+
 
 #### CreateCampaignRequest
 
@@ -205,11 +216,13 @@ Campos comuns ao BFF e ao serviço de campanhas. `status` é enum textual: `ACTI
 
 Base: `/v1/ledger`
 
-| Método | Caminho | Corpo | Resposta |
-|--------|---------|-------|----------|
-| `POST` | `/v1/ledger/credit` | [EntryRequest](#entryrequest--entryresponse) | `201` — [EntryResponse](#entryrequest--entryresponse) |
-| `POST` | `/v1/ledger/debit` | [EntryRequest](#entryrequest--entryresponse) | `201` — [EntryResponse](#entryrequest--entryresponse) |
-| `GET` | `/v1/ledger/balance/{userId}` | — | `200` — [BalanceResponse](#balanceresponse) |
+
+| Método | Caminho                       | Corpo                                        | Resposta                                              |
+| ------ | ----------------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| `POST` | `/v1/ledger/credit`           | [EntryRequest](#entryrequest--entryresponse) | `201` — [EntryResponse](#entryrequest--entryresponse) |
+| `POST` | `/v1/ledger/debit`            | [EntryRequest](#entryrequest--entryresponse) | `201` — [EntryResponse](#entryrequest--entryresponse) |
+| `GET`  | `/v1/ledger/balance/{userId}` | —                                            | `200` — [BalanceResponse](#balanceresponse)           |
+
 
 #### EntryRequest / EntryResponse
 
@@ -256,9 +269,11 @@ Base: `/v1/ledger`
 
 Base: `/v1/prizes`
 
-| Método | Caminho | Resposta |
-|--------|---------|----------|
-| `GET` | `/v1/prizes/users/{userId}?campaignId=` (opcional, UUID) | `200` — array de [PrizeDeliveryResponse](#prizedeliveryresponse) |
+
+| Método | Caminho                                                  | Resposta                                                         |
+| ------ | -------------------------------------------------------- | ---------------------------------------------------------------- |
+| `GET`  | `/v1/prizes/users/{userId}?campaignId=` (opcional, UUID) | `200` — array de [PrizeDeliveryResponse](#prizedeliveryresponse) |
+
 
 #### PrizeDeliveryResponse
 
@@ -307,12 +322,15 @@ Os nomes dos tópicos podem ser sobrescritos por variáveis de ambiente; entre p
 
 ### 2.1 Resumo dos tópicos
 
-| Tópico (default) | Produtor(es) | Consumidor(es) |
-|------------------|--------------|----------------|
-| `campaign.subscription.debit.request` | `campaigns-service` | `ledger-service` |
-| `campaign.subscription.payment.succeeded` | `ledger-service` | `campaigns-service` |
-| `campaign.subscription.payment.failed` | `ledger-service` | `campaigns-service` |
-| `prize.distribution.request` | `campaigns-service` | `prizes-service` |
+
+| Tópico (default)                          | Produtor(es)        | Consumidor(es)      |
+| ----------------------------------------- | ------------------- | ------------------- |
+| `campaign.subscription.debit.request`     | `campaigns-service` | `ledger-service`    |
+| `campaign.subscription.payment.succeeded` | `ledger-service`    | `campaigns-service` |
+| `campaign.subscription.payment.failed`    | `ledger-service`    | `campaigns-service` |
+| `prize.distribution.request`              | `campaigns-service` | `prizes-service`    |
+| `referral.bonus.granted`                  | `profile-service`   | `ledger-service`    |
+
 
 ### 2.2 `campaign.subscription.debit.request`
 
@@ -373,22 +391,40 @@ Os nomes dos tópicos podem ser sobrescritos por variáveis de ambiente; entre p
   "userId": "uuid",
   "couponId": "uuid",
   "couponCode": "string",
-  "occurredAt": "instant",
-  "schemaVersion": 1
+  "occurredAt": "instant"
 }
 ```
 
 Na publicação atual a partir da alocação, `schemaVersion` é definido como `1`.
 
+### 2.6 `referral.bonus.granted`
+
+Publicado **após commit** da criação do perfil quando o registo usou um código de indicação válido e ainda não consumido. O `ledger-service` credita **duas** linhas (indicado e indicador), cada uma com chave de idempotência própria.
+
+- **Chave:** `newUserId` (UUID como string).
+- **Payload:**
+
+```json
+{
+  "newUserId": "uuid",
+  "referrerUserId": "uuid",
+  "referralCode": "string",
+  "bonusAmount": 10,
+  "schemaVersion": 1
+}
+```
+
 ---
 
 ## 3. Referência rápida no código
 
-| Área | Pacotes / ficheiros típicos |
-|------|-----------------------------|
-| BFF DTOs | `bff-service/.../bff/infra/resource/dto/` |
-| REST resources | `*Resource.java` em cada serviço |
-| Kafka DTOs | `*/infra/messaging/dto/` |
-| Nomes dos tópicos | `coupons.kafka.*` em `application.yml` |
+
+| Área              | Pacotes / ficheiros típicos               |
+| ----------------- | ----------------------------------------- |
+| BFF DTOs          | `bff-service/.../bff/infra/resource/dto/` |
+| REST resources    | `*Resource.java` em cada serviço          |
+| Kafka DTOs        | `*/infra/messaging/dto/`                  |
+| Nomes dos tópicos | `coupons.kafka.*` em `application.yml`    |
+
 
 Alterações a estes contratos devem refletir-se neste ficheiro e implicam coordenação entre produtores e consumidores (especialmente Kafka).

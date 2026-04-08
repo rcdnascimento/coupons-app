@@ -1,11 +1,18 @@
 package com.coupons.bff.resource;
 
 import com.coupons.bff.infra.gateway.campaigns.CampaignsGateway;
+import com.coupons.bff.infra.gateway.profile.ProfileGateway;
 import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
+import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
+import com.coupons.bff.infra.resource.dto.CampaignWinnerEntry;
+import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
 import com.coupons.bff.infra.resource.dto.CreateCampaignRequest;
+import com.coupons.bff.infra.resource.dto.ProfileResponse;
 import com.coupons.bff.infra.resource.dto.UserIdRequest;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,9 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class CampaignsProxyResource {
 
     private final CampaignsGateway campaignsGateway;
+    private final ProfileGateway profileGateway;
 
-    public CampaignsProxyResource(CampaignsGateway campaignsGateway) {
+    public CampaignsProxyResource(CampaignsGateway campaignsGateway, ProfileGateway profileGateway) {
         this.campaignsGateway = campaignsGateway;
+        this.profileGateway = profileGateway;
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -48,5 +57,39 @@ public class CampaignsProxyResource {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void subscribe(@PathVariable String campaignId, @Valid @RequestBody UserIdRequest body) {
         campaignsGateway.subscribe(campaignId, body);
+    }
+
+    @GetMapping(value = "/{campaignId}/summary", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CampaignSummaryResponse> summary(@PathVariable String campaignId) {
+        return ResponseEntity.ok(campaignsGateway.summary(campaignId));
+    }
+
+    @GetMapping(value = "/{campaignId}/winners", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CampaignWinnersResponse> winners(@PathVariable String campaignId) {
+        CampaignWinnersResponse body = campaignsGateway.winners(campaignId);
+        if (body.getEntries() == null || body.getEntries().isEmpty()) {
+            return ResponseEntity.ok(body);
+        }
+        Map<String, String> nameByUserId = new HashMap<>();
+        for (CampaignWinnerEntry e : body.getEntries()) {
+            if (e.getUserId() == null) {
+                continue;
+            }
+            String uid = e.getUserId().toString();
+            if (!nameByUserId.containsKey(uid)) {
+                String name = null;
+                try {
+                    ProfileResponse p = profileGateway.getByUserId(uid);
+                    if (p != null && p.getDisplayName() != null && !p.getDisplayName().isBlank()) {
+                        name = p.getDisplayName().trim();
+                    }
+                } catch (RuntimeException ignored) {
+                    // perfil indisponível
+                }
+                nameByUserId.put(uid, name);
+            }
+            e.setWinnerDisplayName(nameByUserId.get(uid));
+        }
+        return ResponseEntity.ok(body);
     }
 }

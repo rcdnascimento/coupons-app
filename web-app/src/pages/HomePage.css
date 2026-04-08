@@ -1,0 +1,248 @@
+/* Home: topbar, marca, menu e overrides de secção */
+
+/* Largura total do viewport (evita coluna 720/840px centrada em telas grandes). */
+.page.home-page {
+  max-width: none;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+.home-page .card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 18px;
+}
+
+.home-page .referral {
+  background: transparent;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 71px;
+  padding: 12px 18px;
+  margin: -20px -18px 16px;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.topbar .brand {
+  font-size: 1.67rem;
+}
+
+.topbar .muted {
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+.referral {
+  background: transparent;
+  border: 0;
+}
+
+.referral h2 {
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.hamburger-btn {
+  width: var(--btn-height);
+  min-width: var(--btn-height);
+  min-height: var(--btn-height);
+  height: var(--btn-height);
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 5px;
+}
+
+.hamburger-btn:hover {
+  background: var(--gray-50);
+}
+
+.hamburger-btn span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 999px;
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 17, 17, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.menu-panel {
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.menu-panel__top {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: var(--btn-height);
+}
+
+.menu-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-height);
+  min-width: var(--btn-height);
+  min-height: var(--btn-height);
+  height: var(--btn-height);
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.menu-close-btn:hover {
+  background: var(--gray-50);
+}
+
+.menu-panel__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 8px;
+}
+
+.menu-item {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: left;
+  justify-content: flex-start;
+  align-items: center;
+  cursor: pointer;
+  min-height: var(--btn-height);
+  height: var(--btn-height);
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu-item:hover {
+  background: var(--gray-50);
+}
+
+.menu-item:active {
+  opacity: 0.88;
+}
+
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-height);
+  min-width: var(--btn-height);
+  min-height: var(--btn-height);
+  height: var(--btn-height);
+  padding: 0;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.sync-btn:hover:not(:disabled) {
+  background: var(--gray-50);
+}
+
+.sync-btn:disabled {
+  cursor: wait;
+  opacity: 1;
+}
+
+.sync-btn__icon {
+  display: block;
+}
+
+.sync-btn__dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.sync-btn__dots > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: sync-dot 0.55s ease-in-out infinite alternate;
+}
+
+.sync-btn__dots > span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.sync-btn__dots > span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes sync-dot {
+  from {
+    opacity: 0.28;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@media (min-width: 768px) {
+  /* Inset horizontal vem de `--page-gutter` em global.css (todas as páginas). */
+  .home-page .topbar {
+    margin: -28px calc(-1 * var(--page-gutter)) 24px;
+    padding: 12px var(--page-gutter);
+  }
+
+  /* Full-bleed do carrossel alinhado ao gutter (especificidade sobre `.carousel`). */
+  .page.home-page .carousel {
+    margin-left: calc(-1 * var(--page-gutter));
+    margin-right: calc(-1 * var(--page-gutter));
+  }
+}

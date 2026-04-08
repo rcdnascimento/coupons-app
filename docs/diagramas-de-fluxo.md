@@ -13,6 +13,7 @@ flowchart LR
   BFF -->|HTTP| PRIZES[prizes-service]
 
   CAMPAIGNS -->|producer| KAFKA[Kafka]
+  PROFILE -->|producer| KAFKA
   KAFKA -->|consumer| PRIZES
   KAFKA -->|consumer| LEDGER
   KAFKA -->|consumer| CAMPAIGNS
@@ -24,7 +25,7 @@ flowchart LR
   PRIZES --> MYSQL_PRIZES[(MySQL prizes)]
 ```
 
-**Tópicos Kafka relevantes (nomes por defeito):** `campaign.subscription.debit.request` → ledger; `campaign.subscription.payment.succeeded` / `campaign.subscription.payment.failed` → campaigns; `prize.distribution.request` → prizes.
+**Tópicos Kafka relevantes (nomes por defeito):** `campaign.subscription.debit.request` → ledger; `campaign.subscription.payment.succeeded` / `campaign.subscription.payment.failed` → campaigns; `prize.distribution.request` → prizes; `referral.bonus.granted` (profile → ledger, bónus de indicação no registo).
 
 ---
 
@@ -93,9 +94,45 @@ sequenceDiagram
   end
 ```
 
+**Indicação (`referralCode`):** quando presente no registo, o `profile-service` valida de forma **síncrona** (código existente, ainda não usado, não auto-indicação); o detalhe está na **secção 4**. O bónus em pontos é **assíncrono** via Kafka (`referral.bonus.granted`).
+
 ---
 
-## 4) Inscrição na campanha: débito assíncrono (Kafka) e estado da subscrição
+## 4) Registo com código de indicação: validação no profile + bónus no ledger
+
+Fluxo quando o utilizador envia `referralCode` no `POST /v1/auth/register` (ou BFF `/api/auth/register`). A validação e a gravação da redenção (`referral_redemptions`) ocorrem **na mesma transação** do perfil; a mensagem Kafka só é enviada **após commit** (`@TransactionalEventListener`).
+
+```mermaid
+sequenceDiagram
+  participant U as Utilizador
+  participant A as auth-service
+  participant P as profile-service
+  participant K as Kafka
+  participant L as ledger-service
+
+  U->>A: POST register (referralCode opcional)
+  A->>A: hash password, salvar User
+  A->>P: POST /v1/profiles (userId, displayName, referralCode?)
+  alt referralCode inválido ou já usado
+    P-->>A: 400 + error
+    A-->>U: 400 (rollback — User não fica criado)
+  else referralCode válido
+    P->>P: perfil + redemption (transação)
+    P-->>A: 201
+    Note over P,K: após commit
+    P->>K: referral.bonus.granted (newUserId, referrerUserId, …)
+    K->>L: consumir
+    L->>L: credit indicado + credit indicador (10+10, idempotência)
+  else sem código
+    P->>P: só criar perfil + gerar código próprio
+    P-->>A: 201
+  end
+  A-->>U: 201 + JWT (se passou no profile)
+```
+
+---
+
+## 5) Inscrição na campanha: débito assíncrono (Kafka) e estado da subscrição
 
 ```mermaid
 sequenceDiagram
@@ -126,7 +163,7 @@ sequenceDiagram
 
 ---
 
-## 5) Distribuição de prémio (agendador + Kafka) e consulta no prizes
+## 6) Distribuição de prémio (agendador + Kafka) e consulta no prizes
 
 ```mermaid
 sequenceDiagram
@@ -151,7 +188,13 @@ sequenceDiagram
 
 ---
 
-## 6) Crédito / débito manual no ledger (REST)
+## 7) Crédito / débito direto no ledger (REST)
+
+API exposta pelo `ledger-service` **sem passar pelo BFF**. Não faz parte do fluxo “utilizador → BFF” nem substitui os débitos/créditos assíncronos (Kafka) das subscrições ou do bónus de indicação.
+
+**Para que serve hoje:** sobretudo **testes de integração** (`coupons-it`), que creditam pontos via `POST /v1/ledger/credit` antes de subscrever campanhas — no produto não existe outro endpoint público para “carregar” saldo. Também permite **ajustes manuais** (admin/ferramentas) se alguém chamar o ledger diretamente.
+
+**Remover estes endpoints** implicaria alterar os testes de integração (ou outra forma de injetar saldo).
 
 ```mermaid
 sequenceDiagram
@@ -174,4 +217,4 @@ sequenceDiagram
 
 ---
 
-*Diagramas alinhados ao código atual (Resource + RestMapper, Kafka para subscrição/débito, schedulers de campanhas).*
+*Diagramas alinhados ao código atual (Resource + RestMapper, Kafka para subscrição/débito, indicação no registo, schedulers de campanhas).*

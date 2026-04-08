@@ -1,0 +1,42 @@
+.account-page__header {
+  margin-bottom: 36px;
+}
+
+.account-page__section {
+  margin: 0 0 32px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.account-page__section:last-of-type {
+  margin-bottom: 0;
+}
+
+.account-page__title {
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.account-page__name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.account-page__balance {
+  margin-top: 10px;
+}
+
+.account-page__actions {
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .account-page__actions button {
+    justify-self: start;
+    width: auto;
+    min-width: min(var(--control-min-width), 100%);
+    max-width: var(--control-max-width);
+  }
+}

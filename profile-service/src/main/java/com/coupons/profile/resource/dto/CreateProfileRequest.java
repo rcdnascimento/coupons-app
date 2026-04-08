@@ -17,6 +17,10 @@ public class CreateProfileRequest {
     @Size(max = 64)
     private String timezone;
 
+    /** Opcional: código de indicação de outro utilizador (validação síncrona). */
+    @Size(max = 64)
+    private String referralCode;
+
     public UUID getUserId() {
         return userId;
     }
@@ -39,5 +43,13 @@ public class CreateProfileRequest {
 
     public void setTimezone(String timezone) {
         this.timezone = timezone;
+    }
+
+    public String getReferralCode() {
+        return referralCode;
+    }
+
+    public void setReferralCode(String referralCode) {
+        this.referralCode = referralCode;
     }
 }

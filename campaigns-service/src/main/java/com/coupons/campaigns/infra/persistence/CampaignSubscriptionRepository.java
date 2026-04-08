@@ -16,4 +16,6 @@ public interface CampaignSubscriptionRepository extends JpaRepository<CampaignSu
 
     List<CampaignSubscription> findByCampaignIdAndStatusOrderBySubscribedAtAsc(
             UUID campaignId, CampaignSubscriptionStatus status);
+
+    long countByCampaignId(UUID campaignId);
 }

@@ -34,7 +34,8 @@ public class AuthRegistrationService {
         newUser.setPasswordHash(passwordEncoder.encode(rawPassword));
         userRepository.save(newUser);
 
-        profileGateway.createProfile(newUser.getId(), newUser.getName(), DEFAULT_TIMEZONE);
+        profileGateway.createProfile(
+                newUser.getId(), newUser.getName(), DEFAULT_TIMEZONE, newUser.getReferralCodeUsed());
 
         return newUser;
     }

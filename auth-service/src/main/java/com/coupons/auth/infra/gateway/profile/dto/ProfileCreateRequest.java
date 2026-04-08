@@ -6,13 +6,15 @@ public class ProfileCreateRequest {
     private UUID userId;
     private String displayName;
     private String timezone;
+    private String referralCode;
 
     public ProfileCreateRequest() {}
 
-    public ProfileCreateRequest(UUID userId, String displayName, String timezone) {
+    public ProfileCreateRequest(UUID userId, String displayName, String timezone, String referralCode) {
         this.userId = userId;
         this.displayName = displayName;
         this.timezone = timezone;
+        this.referralCode = referralCode;
     }
 
     public UUID getUserId() {
@@ -37,5 +39,13 @@ public class ProfileCreateRequest {
 
     public void setTimezone(String timezone) {
         this.timezone = timezone;
+    }
+
+    public String getReferralCode() {
+        return referralCode;
+    }
+
+    public void setReferralCode(String referralCode) {
+        this.referralCode = referralCode;
     }
 }
