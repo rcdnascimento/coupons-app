@@ -41,7 +41,7 @@ export function getCampaignState(c) {
 
 const CAMPAIGN_STATE_LABELS = {
   aberta: "Aberta",
-  fechada: "Finalizada"
+  fechada: "Encerrada"
 };
 
 const FALLBACK_OPENS_SOON = "Abre em breve";
@@ -68,7 +68,7 @@ export function subscriptionsOpenInRoughLabel(subscriptionsStartAtIso) {
       if (minutes >= 1) {
         part = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
       } else {
-        part = "menos de 1 minuto";
+        part = "1 minuto";
       }
     }
   }
@@ -127,7 +127,7 @@ export function campaignStateBadgeLabel(state, campaignLike) {
   return CAMPAIGN_STATE_LABELS[state] ?? state.replace(/_/g, " ");
 }
 
-/** ACTIVE antes de CLOSED; depois `distributionAt` crescente (alinhado ao API). */
+/** ACTIVE antes de CLOSED; ACTIVE por `distributionAt` crescente, CLOSED por `distributionAt` decrescente. */
 export function sortCampaigns(campaigns) {
   const rankClosed = (c) => (c?.status === "CLOSED" ? 1 : 0);
   return [...campaigns].sort((a, b) => {
@@ -136,6 +136,9 @@ export function sortCampaigns(campaigns) {
     if (ra !== rb) return ra - rb;
     const ta = a?.distributionAt ? new Date(a.distributionAt).getTime() : Number.MAX_SAFE_INTEGER;
     const tb = b?.distributionAt ? new Date(b.distributionAt).getTime() : Number.MAX_SAFE_INTEGER;
+    if (ra === 1) {
+      return tb - ta;
+    }
     return ta - tb;
   });
 }

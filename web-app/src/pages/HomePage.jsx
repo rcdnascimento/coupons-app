@@ -7,7 +7,8 @@ import {
   getMyCampaignSubscriptionStatus,
   listCampaigns,
   listPrizesByUser,
-  subscribeCampaign
+  subscribeCampaign,
+  BFF_BASE_URL
 } from "../api";
 import { useNotification } from "../context/NotificationProvider";
 import {
@@ -52,7 +53,8 @@ function CampaignSubscribedDistributionBlock({
   userId,
   navigate,
   onSettled,
-  onAnimationFocusChange
+  onAnimationFocusChange,
+  onResultLabelChange
 }) {
   const campaignId = campaign.id;
   /** Recalculado a cada render do pai (ex.: tick 1s) — sem useMemo para `Date.now()` não ficar “preso”. */
@@ -67,6 +69,8 @@ function CampaignSubscribedDistributionBlock({
   onSettledRef.current = onSettled;
   const onAnimFocusRef = useRef(onAnimationFocusChange);
   onAnimFocusRef.current = onAnimationFocusChange;
+  const onResultLabelRef = useRef(onResultLabelChange);
+  onResultLabelRef.current = onResultLabelChange;
 
   /** Card só com animação: dentro da janela (15s pós-dist ou campanha ainda não fechada) e antes do resultado. */
   const animationFullCard = inAnimationPhase && ui !== "result";
@@ -85,6 +89,7 @@ function CampaignSubscribedDistributionBlock({
       setUi("registered");
       setWon(null);
       setLineIndex(0);
+      onResultLabelRef.current?.(campaignId, null);
       return;
     }
 
@@ -124,23 +129,31 @@ function CampaignSubscribedDistributionBlock({
       if (!last || !isCampaignClosed(last)) {
         setWon(false);
         setUi("result");
+        onResultLabelRef.current?.(campaignId, "Não foi dessa vez");
         onSettledRef.current?.();
         return;
       }
 
+      let didWin = false;
       try {
         const prizes = await listPrizesByUser(userId, campaignId, { silent: true });
         const arr = Array.isArray(prizes) ? prizes : [];
-        setWon(arr.some((p) => String(p.campaignId) === String(campaignId)));
+        didWin = arr.some((p) => String(p.campaignId) === String(campaignId));
+        setWon(didWin);
       } catch {
         setWon(false);
       }
+      onResultLabelRef.current?.(
+        campaignId,
+        didWin ? "Você ganhou!" : "Não foi dessa vez"
+      );
       setUi("result");
       onSettledRef.current?.();
     })();
 
     return () => {
       cancelled = true;
+      onResultLabelRef.current?.(campaignId, null);
     };
   }, [distStarted, campaignId, userId]);
 
@@ -165,17 +178,6 @@ function CampaignSubscribedDistributionBlock({
   if (ui === "result") {
     return (
       <div className="distribution-result">
-        <p
-          className={
-            won
-              ? "distribution-result__title distribution-result__title--won"
-              : "distribution-result__title distribution-result__title--lost"
-          }
-        >
-          {won
-            ? "Parabéns! Você ganhou!"
-            : "Não foi dessa vez. Tente novamente na próxima campanha!"}
-        </p>
         <div className="distribution-result__actions">
           {won && (
             <button
@@ -247,11 +249,20 @@ function pointsCostNumber(c) {
   return Math.max(0, Math.floor(Number(c?.pointsCost) || 0));
 }
 
+function resolveCardImageUrl(pathLike) {
+  const s = typeof pathLike === "string" ? pathLike.trim() : "";
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return `${BFF_BASE_URL}${s}`;
+  return `${BFF_BASE_URL}/${s}`;
+}
+
 export default function HomePage() {
   const { auth, subscriptions, onSubscribe, replaceSubscriptions, onLogout } = useOutletContext();
   const { notifyError } = useNotification();
   const navigate = useNavigate();
   const [distributionAnimFocus, setDistributionAnimFocus] = useState({});
+  const [distributionResultByCampaign, setDistributionResultByCampaign] = useState({});
   const [campaigns, setCampaigns] = useState([]);
   const [balance, setBalance] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -367,6 +378,15 @@ export default function HomePage() {
     setDistributionAnimFocus((prev) => {
       const next = { ...prev };
       if (active) next[campaignId] = true;
+      else delete next[campaignId];
+      return next;
+    });
+  }, []);
+
+  const onDistributionResultLabel = useCallback((campaignId, label) => {
+    setDistributionResultByCampaign((prev) => {
+      const next = { ...prev };
+      if (label) next[campaignId] = label;
       else delete next[campaignId];
       return next;
     });
@@ -549,6 +569,11 @@ export default function HomePage() {
               const distPhase =
                 subscribed && isDistributionTimeReached(c);
               const animCenterOnly = !!distributionAnimFocus[c.id];
+              const cardImageUrl = resolveCardImageUrl(c.imageUrl);
+              const resultBadgeLabel = distributionResultByCampaign[c.id] || null;
+              const resultKey = (resultBadgeLabel || "").toLowerCase();
+              const isResultWon = resultKey.includes("ganhou");
+              const isResultLost = resultKey.includes("não foi") || resultKey.includes("nao foi");
 
               return (
                 <article
@@ -578,8 +603,13 @@ export default function HomePage() {
                 >
                   {!animCenterOnly && (
                     <>
-                      <div className="campaign-card__top">
-                        <div className="campaign-card__top-row">
+                      <div className="campaign-card__media">
+                        {cardImageUrl ? (
+                          <img className="campaign-card__media-img" src={cardImageUrl} alt={c.title} />
+                        ) : (
+                          <div className="campaign-card__media-placeholder" aria-hidden={true} />
+                        )}
+                        <div className="campaign-card__top-row campaign-card__top-row--overlay">
                           <div className="campaign-card__top-left">
                             {(state === "fechada" ||
                               state === "abre_em_breve" ||
@@ -604,6 +634,20 @@ export default function HomePage() {
                             {campaignPointsCornerLabel(cost)}
                           </span>
                         </div>
+                        {(resultBadgeLabel || state === "fechada") && (
+                          <p
+                            className={
+                              "badge badge--campaign-result-badge" +
+                              (isResultWon
+                                ? " badge--campaign-result-won"
+                                : isResultLost
+                                  ? " badge--campaign-result-lost"
+                                  : "")
+                            }
+                          >
+                            {resultBadgeLabel || campaignStateBadgeLabel(state, c)}
+                          </p>
+                        )}
                       </div>
                       <h3>{c.title}</h3>
                       <p className="muted campaign-card__description">
@@ -649,6 +693,7 @@ export default function HomePage() {
                         navigate={navigate}
                         onSettled={loadData}
                         onAnimationFocusChange={onDistributionAnimationFocus}
+                        onResultLabelChange={onDistributionResultLabel}
                       />
                     )}
                     {!distPhase && (

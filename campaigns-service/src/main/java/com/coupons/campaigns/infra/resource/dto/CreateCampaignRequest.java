@@ -1,6 +1,7 @@
 package com.coupons.campaigns.infra.resource.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -24,6 +25,11 @@ public class CreateCampaignRequest {
 
     @NotNull
     private Instant distributionAt;
+
+    private UUID companyId;
+
+    @Size(max = 1024)
+    private String imageUrl;
 
     /** Opcional: após este instante a campanha pode ser ocultada nas listagens do cliente. */
     private Instant visibleUntil;
@@ -70,6 +76,22 @@ public class CreateCampaignRequest {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public UUID getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(UUID companyId) {
+        this.companyId = companyId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Instant getVisibleUntil() {

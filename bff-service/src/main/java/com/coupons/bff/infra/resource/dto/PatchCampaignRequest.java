@@ -1,6 +1,7 @@
 package com.coupons.bff.infra.resource.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
 
@@ -17,6 +18,15 @@ public class PatchCampaignRequest {
     private Instant subscriptionsEndAt;
 
     private Instant distributionAt;
+
+    private UUID companyId;
+
+    private Boolean clearCompany;
+
+    @Size(max = 1024)
+    private String imageUrl;
+
+    private Boolean clearImageUrl;
 
     private Instant visibleUntil;
 
@@ -65,6 +75,38 @@ public class PatchCampaignRequest {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public UUID getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(UUID companyId) {
+        this.companyId = companyId;
+    }
+
+    public Boolean getClearCompany() {
+        return clearCompany;
+    }
+
+    public void setClearCompany(Boolean clearCompany) {
+        this.clearCompany = clearCompany;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Boolean getClearImageUrl() {
+        return clearImageUrl;
+    }
+
+    public void setClearImageUrl(Boolean clearImageUrl) {
+        this.clearImageUrl = clearImageUrl;
     }
 
     public Instant getVisibleUntil() {

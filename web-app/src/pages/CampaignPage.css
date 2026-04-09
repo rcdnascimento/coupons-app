@@ -125,6 +125,12 @@
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.campaign-detail__winner-row--me {
+  background: #eaf3ff;
 }
 
 .campaign-detail__winner-rank {

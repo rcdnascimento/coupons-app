@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useOutletContext, useParams } from "react-router-dom";
 import { getCampaignWinners, listCampaigns } from "../api";
 import "./CampaignPage.css";
 
 export default function CampaignWinnersPage() {
   const { campaignId } = useParams();
+  const { auth } = useOutletContext();
   const [loadFailed, setLoadFailed] = useState(false);
   const [winnersError, setWinnersError] = useState(false);
   const [campaign, setCampaign] = useState(null);
@@ -124,15 +125,21 @@ export default function CampaignWinnersPage() {
             <p className="muted">Nenhum vencedor divulgado ainda.</p>
           ) : (
             <ul className="campaign-detail__winner-list">
-              {winners.entries.map((w) => (
-                <li key={`${w.rank}-${w.userId}`} className="campaign-detail__winner-row">
+              {winners.entries.map((w) => {
+                const isMe = String(w.userId) === String(auth?.userId || "");
+                return (
+                <li
+                  key={`${w.rank}-${w.userId}`}
+                  className={`campaign-detail__winner-row${isMe ? " campaign-detail__winner-row--me" : ""}`}
+                >
                   <span className="campaign-detail__winner-rank muted">{w.rank}.</span>
                   <div className="campaign-detail__winner-main">
                     <span className="campaign-detail__winner-name">{w.winnerDisplayName || "Nome indisponível"}</span>
                     <span className="campaign-detail__winner-prize">{w.couponTitle}</span>
                   </div>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           )}
         </div>

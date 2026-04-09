@@ -18,6 +18,8 @@ public class CampaignResponse {
     private Instant subscriptionsStartAt;
     private Instant subscriptionsEndAt;
     private Instant distributionAt;
+    private UUID companyId;
+    private String imageUrl;
     private Instant visibleUntil;
     private CampaignStatus status;
     private int pointsCost;
@@ -32,6 +34,8 @@ public class CampaignResponse {
         r.subscriptionsStartAt = c.getSubscriptionsStartAt();
         r.subscriptionsEndAt = c.getSubscriptionsEndAt();
         r.distributionAt = c.getDistributionAt();
+        r.companyId = c.getCompanyId();
+        r.imageUrl = c.getImageUrl();
         r.visibleUntil = c.getVisibleUntil();
         r.status = c.getStatus();
         r.pointsCost = c.getPointsCost();
@@ -62,6 +66,14 @@ public class CampaignResponse {
 
     public Instant getDistributionAt() {
         return distributionAt;
+    }
+
+    public UUID getCompanyId() {
+        return companyId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
     }
 
     public Instant getVisibleUntil() {

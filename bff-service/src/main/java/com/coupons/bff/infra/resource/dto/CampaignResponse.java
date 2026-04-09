@@ -11,6 +11,8 @@ public class CampaignResponse {
     private Instant subscriptionsStartAt;
     private Instant subscriptionsEndAt;
     private Instant distributionAt;
+    private UUID companyId;
+    private String imageUrl;
     private Instant visibleUntil;
     private CampaignStatus status;
     private int pointsCost;
@@ -63,6 +65,22 @@ public class CampaignResponse {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public UUID getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(UUID companyId) {
+        this.companyId = companyId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Instant getVisibleUntil() {

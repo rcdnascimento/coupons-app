@@ -4,16 +4,20 @@ import { useNotification } from "../context/NotificationProvider";
 import {
   addCouponToCampaign,
   createCampaign,
+  createCompany,
   createCoupon,
   creditUserLedger,
   getCampaign,
   getCoupon,
   listCampaigns,
+  listCompaniesAdmin,
   listCouponsAdmin,
   patchCampaign,
   patchCoupon,
   searchCoupons,
-  searchUsersAdmin
+  searchUsersAdmin,
+  uploadAdminImage,
+  BFF_BASE_URL
 } from "../api";
 import {
   campaignCardDescriptionText,
@@ -44,6 +48,28 @@ function presetDatetimeLocalFromNow(offsetMinutes) {
 function fromDatetimeLocal(str) {
   if (!str) return null;
   return new Date(str).toISOString();
+}
+
+function cnpjDigitsOnly(v) {
+  return String(v || "").replace(/\D+/g, "").slice(0, 14);
+}
+
+function formatCnpjMask(v) {
+  const d = cnpjDigitsOnly(v);
+  if (!d) return "";
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+function resolveMediaUrl(pathLike) {
+  const s = typeof pathLike === "string" ? pathLike.trim() : "";
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return `${BFF_BASE_URL}${s}`;
+  return `${BFF_BASE_URL}/${s}`;
 }
 
 const ADMIN_DATETIME_PRESETS = [
@@ -95,6 +121,7 @@ function CampaignPreviewCard({ draft }) {
           pointsCost: draft.pointsCost,
           subscriptionsStartAt: draft.subscriptionsStartAt,
           subscriptionsEndAt: draft.subscriptionsEndAt,
+          imageUrl: draft.imageUrl || "",
           distributionAt: draft.distributionAt,
           status: draft.status || "ACTIVE"
         }
@@ -108,8 +135,13 @@ function CampaignPreviewCard({ draft }) {
   return (
     <article className="campaign-card admin-preview-card" aria-hidden={true}>
       {c && state && (
-        <div className="campaign-card__top">
-          <div className="campaign-card__top-row">
+        <div className="campaign-card__media">
+          {c.imageUrl ? (
+            <img className="campaign-card__media-img" src={resolveMediaUrl(c.imageUrl)} alt={c.title} />
+          ) : (
+            <div className="campaign-card__media-placeholder" aria-hidden={true} />
+          )}
+          <div className="campaign-card__top-row campaign-card__top-row--overlay">
             <div className="campaign-card__top-left">
               {(state === "fechada" ||
                 state === "abre_em_breve" ||
@@ -158,6 +190,7 @@ function CampaignPreviewCard({ draft }) {
 
 /** Operação ativa no painel inferior (escolhida a partir dos cards). */
 const PANEL = {
+  COMPANY_CREATE: "company_create",
   CAMP_CREATE: "camp_create",
   CAMP_EDIT: "camp_edit",
   CAMP_ATTACH: "camp_attach",
@@ -170,13 +203,19 @@ const PANEL = {
 export default function AdminPage() {
   const { notifyError, notifySuccess } = useNotification();
   const [panel, setPanel] = useState(null);
+  const [companies, setCompanies] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [coupons, setCoupons] = useState([]);
+
+  const [newCompany, setNewCompany] = useState({ name: "", cnpj: "", logoUrl: "" });
+  const [uploadingCompanyLogo, setUploadingCompanyLogo] = useState(false);
 
   const [newCamp, setNewCamp] = useState({
     title: "",
     description: "",
     pointsCost: "0",
+    companyId: "",
+    imageUrl: "",
     subStart: "",
     subEnd: "",
     distribution: "",
@@ -188,6 +227,8 @@ export default function AdminPage() {
     title: "",
     description: "",
     pointsCost: "0",
+    companyId: "",
+    imageUrl: "",
     subStart: "",
     subEnd: "",
     distribution: "",
@@ -220,6 +261,7 @@ export default function AdminPage() {
   const [pointsUserFocused, setPointsUserFocused] = useState(false);
   const [pointsResolvedUser, setPointsResolvedUser] = useState(null);
   const pointsUserSuggestBlurTimer = useRef(null);
+  const [uploadingCampaignImage, setUploadingCampaignImage] = useState(false);
 
   const previewDraft = useMemo(() => {
     if (!newCamp.title.trim()) return null;
@@ -231,6 +273,7 @@ export default function AdminPage() {
       title: newCamp.title.trim(),
       description: newCamp.description,
       pointsCost: Math.max(0, parseInt(newCamp.pointsCost, 10) || 0),
+      imageUrl: newCamp.imageUrl,
       subscriptionsStartAt: subStart,
       subscriptionsEndAt: subEnd,
       distributionAt: distribution,
@@ -249,6 +292,7 @@ export default function AdminPage() {
       title: editCamp.title.trim(),
       description: editCamp.description,
       pointsCost: Math.max(0, parseInt(editCamp.pointsCost, 10) || 0),
+      imageUrl: editCamp.imageUrl,
       subscriptionsStartAt: subStart,
       subscriptionsEndAt: subEnd,
       distributionAt: distribution,
@@ -292,6 +336,11 @@ export default function AdminPage() {
     [newCoupon]
   );
 
+  const canSubmitCreateCompany = useMemo(() => {
+    const cnpjDigits = cnpjDigitsOnly(newCompany.cnpj);
+    return Boolean(newCompany.name.trim() && cnpjDigits.length === 14);
+  }, [newCompany]);
+
   const canSubmitEditCoupon = useMemo(
     () => Boolean(editCouponId && editCoupon.expires?.trim() && fromDatetimeLocal(editCoupon.expires)),
     [editCouponId, editCoupon]
@@ -312,6 +361,11 @@ export default function AdminPage() {
     setCampaigns(sortCampaigns(list));
   }, []);
 
+  const refreshCompanies = useCallback(async () => {
+    const list = await listCompaniesAdmin();
+    setCompanies(Array.isArray(list) ? list : []);
+  }, []);
+
   const refreshCoupons = useCallback(async () => {
     setCoupons(await listCouponsAdmin());
   }, []);
@@ -319,12 +373,12 @@ export default function AdminPage() {
   useEffect(() => {
     (async () => {
       try {
-        await Promise.all([refreshCampaigns(), refreshCoupons()]);
+        await Promise.all([refreshCompanies(), refreshCampaigns(), refreshCoupons()]);
       } catch {
         /* erros: toast via api.js */
       }
     })();
-  }, [refreshCampaigns, refreshCoupons]);
+  }, [refreshCampaigns, refreshCoupons, refreshCompanies]);
 
   useEffect(() => {
     if (panel !== PANEL.CAMP_ATTACH) {
@@ -465,6 +519,52 @@ export default function AdminPage() {
     setPointsUserFocused(false);
   }
 
+  async function onUploadCompanyLogo(file) {
+    if (!file) return;
+    try {
+      setUploadingCompanyLogo(true);
+      const out = await uploadAdminImage(file);
+      if (out?.path) setNewCompany((s) => ({ ...s, logoUrl: out.path }));
+    } finally {
+      setUploadingCompanyLogo(false);
+    }
+  }
+
+  async function onUploadCampaignImage(file, mode) {
+    if (!file) return;
+    try {
+      setUploadingCampaignImage(true);
+      const out = await uploadAdminImage(file);
+      if (!out?.path) return;
+      if (mode === "new") setNewCamp((s) => ({ ...s, imageUrl: out.path }));
+      else setEditCamp((s) => ({ ...s, imageUrl: out.path }));
+    } finally {
+      setUploadingCampaignImage(false);
+    }
+  }
+
+  async function onCreateCompany(e) {
+    e.preventDefault();
+    try {
+      const cnpjDigits = cnpjDigitsOnly(newCompany.cnpj);
+      if (!newCompany.name.trim() || cnpjDigits.length !== 14) {
+        notifyError("Nome e CNPJ com 14 dígitos são obrigatórios.");
+        return;
+      }
+      const body = {
+        name: newCompany.name.trim(),
+        cnpj: cnpjDigits,
+        logoUrl: newCompany.logoUrl.trim() || undefined
+      };
+      const created = await createCompany(body);
+      notifySuccess(`Empresa criada: ${created.name}`);
+      setNewCompany({ name: "", cnpj: "", logoUrl: "" });
+      await refreshCompanies();
+    } catch {
+      /* toast em api.js */
+    }
+  }
+
   async function onCreateCampaign(e) {
     e.preventDefault();
     try {
@@ -476,6 +576,8 @@ export default function AdminPage() {
         subscriptionsEndAt: fromDatetimeLocal(newCamp.subEnd),
         distributionAt: fromDatetimeLocal(newCamp.distribution)
       };
+      if (newCamp.companyId) body.companyId = newCamp.companyId;
+      if (newCamp.imageUrl?.trim()) body.imageUrl = newCamp.imageUrl.trim();
       if (!body.subscriptionsStartAt || !body.subscriptionsEndAt || !body.distributionAt) {
         notifyError("Preencha todas as datas da campanha.");
         return;
@@ -490,6 +592,8 @@ export default function AdminPage() {
         title: "",
         description: "",
         pointsCost: "0",
+        companyId: "",
+        imageUrl: "",
         subStart: "",
         subEnd: "",
         distribution: "",
@@ -510,6 +614,8 @@ export default function AdminPage() {
         title: c.title || "",
         description: c.description != null ? String(c.description) : "",
         pointsCost: String(c.pointsCost ?? 0),
+        companyId: c.companyId || "",
+        imageUrl: c.imageUrl || "",
         subStart: toDatetimeLocalValue(c.subscriptionsStartAt),
         subEnd: toDatetimeLocalValue(c.subscriptionsEndAt),
         distribution: toDatetimeLocalValue(c.distributionAt),
@@ -534,6 +640,10 @@ export default function AdminPage() {
         distributionAt: fromDatetimeLocal(editCamp.distribution),
         status: editCamp.status
       };
+      if (editCamp.companyId) body.companyId = editCamp.companyId;
+      else body.clearCompany = true;
+      if (editCamp.imageUrl?.trim()) body.imageUrl = editCamp.imageUrl.trim();
+      else body.clearImageUrl = true;
       if (editCamp.visibleUntil?.trim()) {
         const vu = fromDatetimeLocal(editCamp.visibleUntil);
         if (vu) body.visibleUntil = vu;
@@ -685,6 +795,13 @@ export default function AdminPage() {
           <div className="admin-hub__actions">
             <button
               type="button"
+              className={`ghost admin-hub__btn${panel === PANEL.COMPANY_CREATE ? " admin-hub__btn--active" : ""}`}
+              onClick={() => openPanel(PANEL.COMPANY_CREATE)}
+            >
+              Cadastrar empresa
+            </button>
+            <button
+              type="button"
               className={`ghost admin-hub__btn${panel === PANEL.CAMP_CREATE ? " admin-hub__btn--active" : ""}`}
               onClick={() => openPanel(PANEL.CAMP_CREATE)}
             >
@@ -751,6 +868,54 @@ export default function AdminPage() {
       <section className="card admin-workspace" aria-live="polite">
         {!panel && <p className="muted admin-workspace__hint">Selecione uma operação em um dos cards acima.</p>}
 
+        {panel === PANEL.COMPANY_CREATE && (
+          <>
+            <h2 className="admin-workspace__heading">Cadastrar empresa parceira</h2>
+            <form className="admin-form" onSubmit={onCreateCompany}>
+              <label>
+                Nome da empresa
+                <input
+                  value={newCompany.name}
+                  onChange={(e) => setNewCompany((s) => ({ ...s, name: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                CNPJ (14 dígitos)
+                <input
+                  value={newCompany.cnpj}
+                  onChange={(e) =>
+                    setNewCompany((s) => ({ ...s, cnpj: formatCnpjMask(e.target.value) }))
+                  }
+                  inputMode="numeric"
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
+                  required
+                />
+              </label>
+              <label>
+                URL do logo (opcional)
+                <input
+                  value={newCompany.logoUrl}
+                  onChange={(e) => setNewCompany((s) => ({ ...s, logoUrl: e.target.value }))}
+                />
+              </label>
+              <label>
+                Upload do logo (opcional)
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => onUploadCompanyLogo(e.target.files?.[0])}
+                />
+                {uploadingCompanyLogo && <span className="tiny">A enviar logo...</span>}
+              </label>
+              <button type="submit" className="primary" disabled={!canSubmitCreateCompany}>
+                Cadastrar empresa
+              </button>
+            </form>
+          </>
+        )}
+
         {panel === PANEL.CAMP_CREATE && (
           <>
             <h2 className="admin-workspace__heading">Criar campanha</h2>
@@ -782,6 +947,37 @@ export default function AdminPage() {
                     value={newCamp.pointsCost}
                     onChange={(e) => setNewCamp((s) => ({ ...s, pointsCost: e.target.value }))}
                   />
+                </label>
+                <label>
+                  Empresa parceira (opcional)
+                  <select
+                    value={newCamp.companyId}
+                    onChange={(e) => setNewCamp((s) => ({ ...s, companyId: e.target.value }))}
+                  >
+                    <option value="">Sem empresa</option>
+                    {companies.map((co) => (
+                      <option key={co.id} value={co.id}>
+                        {co.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Imagem do card (opcional)
+                  <input
+                    value={newCamp.imageUrl}
+                    onChange={(e) => setNewCamp((s) => ({ ...s, imageUrl: e.target.value }))}
+                    placeholder="/api/uploads/images/..."
+                  />
+                </label>
+                <label>
+                  Upload da imagem do card (opcional)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => onUploadCampaignImage(e.target.files?.[0], "new")}
+                  />
+                  {uploadingCampaignImage && <span className="tiny">A enviar imagem...</span>}
                 </label>
                 <AdminDatetimeField
                   label="Início das inscrições"
@@ -865,6 +1061,37 @@ export default function AdminPage() {
                       value={editCamp.pointsCost}
                       onChange={(e) => setEditCamp((s) => ({ ...s, pointsCost: e.target.value }))}
                     />
+                  </label>
+                  <label>
+                    Empresa parceira (opcional)
+                    <select
+                      value={editCamp.companyId}
+                      onChange={(e) => setEditCamp((s) => ({ ...s, companyId: e.target.value }))}
+                    >
+                      <option value="">Sem empresa</option>
+                      {companies.map((co) => (
+                        <option key={co.id} value={co.id}>
+                          {co.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Imagem do card (opcional)
+                    <input
+                      value={editCamp.imageUrl}
+                      onChange={(e) => setEditCamp((s) => ({ ...s, imageUrl: e.target.value }))}
+                      placeholder="/api/uploads/images/..."
+                    />
+                  </label>
+                  <label>
+                    Upload da imagem do card (opcional)
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => onUploadCampaignImage(e.target.files?.[0], "edit")}
+                    />
+                    {uploadingCampaignImage && <span className="tiny">A enviar imagem...</span>}
                   </label>
                   <AdminDatetimeField
                     label="Início das inscrições"

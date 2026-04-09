@@ -40,6 +40,13 @@ public class Campaign {
     @Column(name = "distribution_at", nullable = false)
     private Instant distributionAt;
 
+    @Convert(converter = UuidChar36Converter.class)
+    @Column(name = "company_id", length = 36, columnDefinition = "CHAR(36)")
+    private UUID companyId;
+
+    @Column(name = "image_url", length = 1024)
+    private String imageUrl;
+
     /** Se não nulo, o cliente pode ocultar a campanha nas listagens após este instante. */
     @Column(name = "visible_until")
     private Instant visibleUntil;
@@ -120,6 +127,22 @@ public class Campaign {
 
     public void setDistributionAt(Instant distributionAt) {
         this.distributionAt = distributionAt;
+    }
+
+    public UUID getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(UUID companyId) {
+        this.companyId = companyId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Instant getVisibleUntil() {

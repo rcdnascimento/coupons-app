@@ -124,6 +124,40 @@ export async function createCampaign(payload) {
   });
 }
 
+export async function listCompaniesAdmin() {
+  return requestJson(`${BFF_BASE_URL}/api/companies`);
+}
+
+export async function createCompany(payload) {
+  return requestJson(`${BFF_BASE_URL}/api/companies`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function uploadAdminImage(file) {
+  if (!file) throw new Error("Ficheiro não informado");
+  const form = new FormData();
+  form.append("file", file);
+  const resp = await fetch(`${BFF_BASE_URL}/api/uploads/images`, {
+    method: "POST",
+    body: form
+  });
+  if (!resp.ok) {
+    let msg = `Erro HTTP ${resp.status}`;
+    try {
+      const data = await resp.json();
+      if (data?.error) msg = data.error;
+      if (typeof data?.message === "string" && data.message) msg = data.message;
+    } catch (_) {
+      // ignore parse
+    }
+    apiOnError?.(msg);
+    throw new Error(msg);
+  }
+  return resp.json();
+}
+
 export async function getCampaign(campaignId, options = {}) {
   return requestJson(`${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}`, {
     method: "GET",

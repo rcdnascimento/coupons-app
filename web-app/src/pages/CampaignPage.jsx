@@ -123,7 +123,7 @@ export default function CampaignPage() {
             <div className="campaign-card__top-row">
               <div className="campaign-card__top-left">
                 {campaignState === "fechada" && (
-                  <p className={`badge badge--campaign-state ${campaignState}`}>Finalizada</p>
+                  <p className={`badge badge--campaign-state ${campaignState}`}>Encerrada</p>
                 )}
               </div>
               <span className="campaign-card__coins" title="Custo de entrada na campanha">

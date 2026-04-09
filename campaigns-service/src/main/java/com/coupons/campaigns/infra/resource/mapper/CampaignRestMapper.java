@@ -21,6 +21,8 @@ public class CampaignRestMapper {
         campaign.setSubscriptionsStartAt(request.getSubscriptionsStartAt());
         campaign.setSubscriptionsEndAt(request.getSubscriptionsEndAt());
         campaign.setDistributionAt(request.getDistributionAt());
+        campaign.setCompanyId(request.getCompanyId());
+        campaign.setImageUrl(blankToNull(request.getImageUrl()));
         campaign.setVisibleUntil(request.getVisibleUntil());
         campaign.setPointsCost(request.getPointsCost());
         return campaign;
@@ -46,5 +48,11 @@ public class CampaignRestMapper {
 
     public AllocationResponse toResponse(CampaignAllocation allocation) {
         return AllocationResponse.from(allocation);
+    }
+
+    private String blankToNull(String v) {
+        if (v == null) return null;
+        String t = v.trim();
+        return t.isEmpty() ? null : t;
     }
 }

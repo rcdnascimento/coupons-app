@@ -4,6 +4,8 @@ import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
+import com.coupons.bff.infra.resource.dto.CompanyResponse;
+import com.coupons.bff.infra.resource.dto.CreateCompanyRequest;
 import com.coupons.bff.infra.resource.dto.CreateCampaignRequest;
 import com.coupons.bff.infra.resource.dto.MyCampaignSubscriptionResponse;
 import com.coupons.bff.infra.resource.dto.PatchCampaignRequest;
@@ -13,8 +15,10 @@ import java.util.List;
 public interface CampaignsGateway {
 
     CampaignResponse createCampaign(CreateCampaignRequest request);
+    CompanyResponse createCompany(CreateCompanyRequest request);
 
     List<CampaignResponse> listCampaigns();
+    List<CompanyResponse> listCompanies();
 
     CampaignResponse getCampaign(String campaignId);
 

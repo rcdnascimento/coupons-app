@@ -6,7 +6,9 @@ import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
+import com.coupons.bff.infra.resource.dto.CompanyResponse;
 import com.coupons.bff.infra.resource.dto.MyCampaignSubscriptionResponse;
+import com.coupons.bff.infra.resource.dto.CreateCompanyRequest;
 import com.coupons.bff.infra.resource.dto.CreateCampaignRequest;
 import com.coupons.bff.infra.resource.dto.PatchCampaignRequest;
 import com.coupons.bff.infra.resource.dto.UserIdRequest;
@@ -51,6 +53,24 @@ public class CampaignsGatewayImpl implements CampaignsGateway {
     }
 
     @Override
+    public CompanyResponse createCompany(CreateCompanyRequest request) {
+        try {
+            return campaignsWebClient
+                    .post()
+                    .uri("/v1/companies")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(CompanyResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
     public List<CampaignResponse> listCampaigns() {
         try {
             return campaignsWebClient
@@ -58,6 +78,22 @@ public class CampaignsGatewayImpl implements CampaignsGateway {
                     .uri("/v1/campaigns")
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<CampaignResponse>>() {})
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public List<CompanyResponse> listCompanies() {
+        try {
+            return campaignsWebClient
+                    .get()
+                    .uri("/v1/companies")
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<CompanyResponse>>() {})
                     .block();
         } catch (WebClientResponseException ex) {
             throw gatewayHttpSupport.upstream(ex);

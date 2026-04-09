@@ -4,6 +4,7 @@ import com.coupons.campaigns.domain.CampaignStatus;
 import com.coupons.campaigns.domain.entity.Campaign;
 import com.coupons.campaigns.domain.exception.BadRequestException;
 import com.coupons.campaigns.domain.exception.CampaignNotFoundException;
+import com.coupons.campaigns.infra.persistence.CompanyRepository;
 import com.coupons.campaigns.infra.persistence.CampaignRepository;
 import com.coupons.campaigns.infra.resource.dto.PatchCampaignRequest;
 import java.util.List;
@@ -15,13 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class CampaignManagementService {
 
     private final CampaignRepository campaignRepository;
+    private final CompanyRepository companyRepository;
 
-    public CampaignManagementService(CampaignRepository campaignRepository) {
+    public CampaignManagementService(CampaignRepository campaignRepository, CompanyRepository companyRepository) {
         this.campaignRepository = campaignRepository;
+        this.companyRepository = companyRepository;
     }
 
     @Transactional
     public Campaign createCampaign(Campaign campaign) {
+        validateCompanyIfPresent(campaign.getCompanyId());
         validateTimeline(campaign);
         campaign.setTitle(campaign.getTitle().trim());
         if (campaign.getDescription() != null) {
@@ -54,6 +58,17 @@ public class CampaignManagementService {
         if (patch.getDistributionAt() != null) {
             campaign.setDistributionAt(patch.getDistributionAt());
         }
+        if (Boolean.TRUE.equals(patch.getClearCompany())) {
+            campaign.setCompanyId(null);
+        } else if (patch.getCompanyId() != null) {
+            validateCompanyIfPresent(patch.getCompanyId());
+            campaign.setCompanyId(patch.getCompanyId());
+        }
+        if (Boolean.TRUE.equals(patch.getClearImageUrl())) {
+            campaign.setImageUrl(null);
+        } else if (patch.getImageUrl() != null) {
+            campaign.setImageUrl(blankToNull(patch.getImageUrl()));
+        }
         if (Boolean.TRUE.equals(patch.getClearVisibleUntil())) {
             campaign.setVisibleUntil(null);
         } else if (patch.getVisibleUntil() != null) {
@@ -81,5 +96,18 @@ public class CampaignManagementService {
         if (campaign.getDistributionAt().isBefore(campaign.getSubscriptionsEndAt())) {
             throw new BadRequestException("distributionAt deve ser posterior ao fim das inscrições");
         }
+    }
+
+    private void validateCompanyIfPresent(UUID companyId) {
+        if (companyId == null) return;
+        if (!companyRepository.existsById(companyId)) {
+            throw new BadRequestException("companyId inválido: empresa não encontrada");
+        }
+    }
+
+    private String blankToNull(String v) {
+        if (v == null) return null;
+        String t = v.trim();
+        return t.isEmpty() ? null : t;
     }
 }
