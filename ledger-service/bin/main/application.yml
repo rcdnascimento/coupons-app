@@ -34,6 +34,7 @@ coupons:
     topic-campaign-subscription-payment-succeeded: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED:campaign.subscription.payment.succeeded}
     topic-campaign-subscription-payment-failed: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED:campaign.subscription.payment.failed}
     topic-referral-bonus-granted: ${KAFKA_TOPIC_REFERRAL_BONUS_GRANTED:referral.bonus.granted}
+    topic-chest-bonus-granted: ${KAFKA_TOPIC_CHEST_BONUS_GRANTED:chest.bonus.granted}
 
 management:
   endpoints:

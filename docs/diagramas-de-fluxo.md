@@ -11,9 +11,11 @@ flowchart LR
   BFF -->|HTTP| CAMPAIGNS[campaigns-service]
   BFF -->|HTTP| LEDGER[ledger-service]
   BFF -->|HTTP| PRIZES[prizes-service]
+  BFF -->|HTTP| CHEST[daily-chest-service]
 
   CAMPAIGNS -->|producer| KAFKA[Kafka]
   PROFILE -->|producer| KAFKA
+  CHEST -->|producer| KAFKA
   KAFKA -->|consumer| PRIZES
   KAFKA -->|consumer| LEDGER
   KAFKA -->|consumer| CAMPAIGNS
@@ -23,9 +25,10 @@ flowchart LR
   CAMPAIGNS --> MYSQL_CAMPAIGNS[(MySQL campaigns)]
   LEDGER --> MYSQL_LEDGER[(MySQL ledger)]
   PRIZES --> MYSQL_PRIZES[(MySQL prizes)]
+  CHEST --> MYSQL_CHEST[(MySQL daily_chest)]
 ```
 
-**Tópicos Kafka relevantes (nomes por defeito):** `campaign.subscription.debit.request` → ledger; `campaign.subscription.payment.succeeded` / `campaign.subscription.payment.failed` → campaigns; `prize.distribution.request` → prizes; `referral.bonus.granted` (profile → ledger, bónus de indicação no registo).
+**Tópicos Kafka relevantes (nomes por defeito):** `campaign.subscription.debit.request` → ledger; `campaign.subscription.payment.succeeded` / `campaign.subscription.payment.failed` → campaigns; `prize.distribution.request` → prizes; `referral.bonus.granted` (profile → ledger, bónus de indicação no registo); `chest.bonus.granted` (daily-chest → ledger, crédito diário do baú).
 
 ---
 
@@ -217,4 +220,70 @@ sequenceDiagram
 
 ---
 
-*Diagramas alinhados ao código atual (Resource + RestMapper, Kafka para subscrição/débito, indicação no registo, schedulers de campanhas).*
+## 8) Baú da Sorte diário: abertura idempotente + crédito assíncrono no ledger
+
+Fluxo implementado:
+- frontend chama BFF (`/api/daily-chest/today` e `/api/daily-chest/open`);
+- BFF apenas faz proxy para `daily-chest-service`;
+- `daily-chest-service` resolve timezone via `profile-service` (fallback `America/Sao_Paulo`);
+- garante abertura única por `(user_id, local_date)` e publica evento `chest.bonus.granted`;
+- `ledger-service` consome e credita com `reason=DAILY_CHEST_BONUS`, `refType=DAILY_CHEST`, `refId=localDate`.
+
+```mermaid
+sequenceDiagram
+  participant U as Utilizador (web-app)
+  participant B as bff-service
+  participant C as daily-chest-service
+  participant P as profile-service
+  participant K as Kafka
+  participant L as ledger-service
+
+  U->>B: GET /api/daily-chest/today?userId=...
+  B->>C: GET /v1/daily-chest/today?userId=...
+  C->>P: GET /v1/profiles/{userId}
+  C->>C: timezone + localDate (fallback SP)
+  alt já abriu hoje
+    C-->>B: 200 openedToday=true + rewardCoins + openedAt
+  else ainda não abriu
+    C-->>B: 200 openedToday=false
+  end
+  B-->>U: resposta today
+
+  U->>B: POST /api/daily-chest/open {userId}
+  B->>C: POST /v1/daily-chest/open {userId}
+  C->>P: GET /v1/profiles/{userId}
+  C->>C: verificar UNIQUE(user_id, local_date)
+  alt já abriu hoje
+    C-->>B: 200 alreadyOpened=true + mesmo prémio
+  else primeira abertura do dia
+    C->>C: sortear 10/50/100 (80/15/5), persistir
+    C->>K: chest.bonus.granted (userId, rewardCoins, localDate, idempotencyKey)
+    C-->>B: 200 alreadyOpened=false + prémio
+    K->>L: consumir evento
+    L->>L: creditar idempotente no ledger
+  end
+  B-->>U: resposta open
+```
+
+---
+
+## 9) Frontend autenticado: FAB do Baú da Sorte
+
+No `web-app`, o `DailyChestFab` foi integrado no `AuthenticatedLayout` (aparece em todas as páginas autenticadas, acima do bottom nav):
+- estado inicial via `GET /api/daily-chest/today`;
+- ao abrir: animação local de suspense (1.5s–2.5s) + `POST /api/daily-chest/open`;
+- após sucesso: mostra resultado e dispara evento `coupons:balance-refresh` para atualizar saldo em `Home` e `Conta`.
+
+```mermaid
+flowchart LR
+  L[AuthenticatedLayout] --> FAB[DailyChestFab]
+  FAB -->|GET today| BFF[/api/daily-chest/today]
+  FAB -->|POST open| BFF2[/api/daily-chest/open]
+  FAB -->|window event| EVT[coupons:balance-refresh]
+  EVT --> HOME[HomePage recarrega saldo]
+  EVT --> ACCOUNT[AccountPage recarrega saldo]
+```
+
+---
+
+*Diagramas alinhados ao código atual (Resource + RestMapper, Kafka para subscrição/débito, indicação no registo, Baú da Sorte diário com crédito assíncrono no ledger, e FAB no frontend autenticado).*

@@ -68,6 +68,7 @@ public class ProfileCreationService {
 
         draft.setReferralCode(generateUniqueReferralCode());
         profileRepository.save(draft);
+        eventPublisher.publishEvent(new ReferralBonusGrantedEvent(null, userId, null));
 
         if (normalizedReferral != null && referrerProfile != null) {
             ReferralRedemption redemption = new ReferralRedemption();

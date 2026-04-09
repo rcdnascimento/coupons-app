@@ -102,6 +102,21 @@ export async function getMeBalance(userId) {
   return requestJson(`${BFF_BASE_URL}/api/me/balance?userId=${encodeURIComponent(userId)}`);
 }
 
+export async function getDailyChestToday(userId, options = {}) {
+  return requestJson(
+    `${BFF_BASE_URL}/api/daily-chest/today?userId=${encodeURIComponent(userId)}`,
+    { method: "GET", ...options }
+  );
+}
+
+export async function openDailyChest(userId, options = {}) {
+  return requestJson(`${BFF_BASE_URL}/api/daily-chest/open`, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+    ...options
+  });
+}
+
 export async function getMeProfile({ userId, name, email }) {
   const q = new URLSearchParams({ userId });
   if (name) q.set("name", name);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { getMeBalance, getMeProfile } from "../api";
 import { useNotification } from "../context/NotificationProvider";
@@ -11,7 +11,7 @@ export default function AccountPage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const bal = await getMeBalance(auth.userId).catch(() => null);
@@ -25,11 +25,19 @@ export default function AccountPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [auth.email, auth.name, auth.userId]);
 
   useEffect(() => {
     load();
-  }, [auth.userId]);
+  }, [load]);
+
+  useEffect(() => {
+    const onRefreshBalance = () => {
+      load();
+    };
+    window.addEventListener("coupons:balance-refresh", onRefreshBalance);
+    return () => window.removeEventListener("coupons:balance-refresh", onRefreshBalance);
+  }, [load]);
 
   const referralLink = useMemo(() => {
     const code = profile?.referralCode || auth?.referralCode;

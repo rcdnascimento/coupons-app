@@ -4,6 +4,7 @@ import com.coupons.ledger.domain.entity.LedgerEntry;
 import com.coupons.ledger.infra.resource.dto.BalanceResponse;
 import com.coupons.ledger.infra.resource.dto.EntryRequest;
 import com.coupons.ledger.infra.resource.dto.EntryResponse;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,29 @@ public class LedgerRestMapper {
         line.setReason("REFERRAL_BONUS");
         line.setRefType("REFERRAL_SIGNUP");
         line.setRefId(otherPartyUserId.toString());
+        line.setIdempotencyKey(idempotencyKey.trim());
+        return line;
+    }
+
+    public LedgerEntry toSignupBonusLine(UUID userId, int amount, String idempotencyKey) {
+        LedgerEntry line = new LedgerEntry();
+        line.setUserId(userId);
+        line.setAmount(Math.abs(amount));
+        line.setReason("SIGNUP_BONUS");
+        line.setRefType("SIGNUP");
+        line.setRefId(userId.toString());
+        line.setIdempotencyKey(idempotencyKey.trim());
+        return line;
+    }
+
+    public LedgerEntry toDailyChestBonusLine(
+            UUID userId, int amount, String idempotencyKey, LocalDate localDate) {
+        LedgerEntry line = new LedgerEntry();
+        line.setUserId(userId);
+        line.setAmount(Math.abs(amount));
+        line.setReason("DAILY_CHEST_BONUS");
+        line.setRefType("DAILY_CHEST");
+        line.setRefId(localDate.toString());
         line.setIdempotencyKey(idempotencyKey.trim());
         return line;
     }

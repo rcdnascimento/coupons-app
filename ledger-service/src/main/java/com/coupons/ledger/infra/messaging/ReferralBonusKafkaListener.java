@@ -41,11 +41,17 @@ public class ReferralBonusKafkaListener {
             log.warn("referral.bonus JSON inválido: {}", e.getMessage());
             return;
         }
-        if (evt.getNewUserId() == null || evt.getReferrerUserId() == null) {
-            log.warn("referral.bonus com newUserId ou referrerUserId em falta");
+        if (evt.getNewUserId() == null) {
+            log.warn("referral.bonus com newUserId em falta");
             return;
         }
         int amount = evt.getBonusAmount() > 0 ? evt.getBonusAmount() : 10;
+        if (evt.getReferrerUserId() == null) {
+            String signupId = "signup-bonus:user:" + evt.getNewUserId();
+            ledgerCreditService.credit(
+                    ledgerRestMapper.toSignupBonusLine(evt.getNewUserId(), amount, signupId));
+            return;
+        }
         String idNew =
                 "referral-bonus:new-user:"
                         + evt.getNewUserId()

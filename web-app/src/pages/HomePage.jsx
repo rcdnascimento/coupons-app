@@ -272,6 +272,11 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pollingCampaignsRef = useRef(new Set());
 
+  const reloadBalance = useCallback(async () => {
+    const bal = await getMeBalance(auth.userId).catch(() => null);
+    setBalance(bal?.balance ?? null);
+  }, [auth.userId]);
+
   useEffect(() => {
     const id = setInterval(() => setTick((v) => v + 1), 1000);
     return () => clearInterval(id);
@@ -373,6 +378,14 @@ export default function HomePage() {
   useEffect(() => {
     loadData();
   }, [auth.userId]);
+
+  useEffect(() => {
+    const onRefreshBalance = () => {
+      reloadBalance();
+    };
+    window.addEventListener("coupons:balance-refresh", onRefreshBalance);
+    return () => window.removeEventListener("coupons:balance-refresh", onRefreshBalance);
+  }, [reloadBalance]);
 
   const onDistributionAnimationFocus = useCallback((campaignId, active) => {
     setDistributionAnimFocus((prev) => {

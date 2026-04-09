@@ -36,4 +36,10 @@ public class WebClientConfig {
             WebClient.Builder builder, @Value("${coupons.services.ledger-url}") String ledgerBaseUrl) {
         return builder.baseUrl(ledgerBaseUrl).build();
     }
+
+    @Bean
+    public WebClient dailyChestWebClient(
+            WebClient.Builder builder, @Value("${coupons.services.daily-chest-url}") String dailyChestBaseUrl) {
+        return builder.baseUrl(dailyChestBaseUrl).build();
+    }
 }

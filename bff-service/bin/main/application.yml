@@ -13,6 +13,7 @@ coupons:
     campaigns-url: http://localhost:8083
     ledger-url: http://localhost:8084
     prizes-url: http://localhost:8085
+    daily-chest-url: http://localhost:8086
 
 management:
   endpoints:
