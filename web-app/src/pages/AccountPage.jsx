@@ -77,8 +77,7 @@ export default function AccountPage() {
         <h2 className="account-page__name">{auth.name}</h2>
         <p className="muted">{auth.email}</p>
         <p className="muted account-page__balance">
-          Pontos atuais:{" "}
-          {loading ? "..." : balance != null ? balance : "indisponível"}
+          Você tem {loading ? "..." : balance != null ? balance : "indisponível"} moedas
         </p>
       </section>
 

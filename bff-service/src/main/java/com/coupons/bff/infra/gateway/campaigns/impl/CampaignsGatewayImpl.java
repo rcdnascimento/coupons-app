@@ -3,6 +3,7 @@ package com.coupons.bff.infra.gateway.campaigns.impl;
 import com.coupons.bff.infra.gateway.campaigns.CampaignsGateway;
 import com.coupons.bff.infra.gateway.support.GatewayHttpSupport;
 import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
+import com.coupons.bff.infra.resource.dto.CampaignCouponLinkResponse;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
@@ -146,6 +147,38 @@ public class CampaignsGatewayImpl implements CampaignsGateway {
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(CampaignResponse.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public List<CampaignCouponLinkResponse> listCampaignCoupons(String campaignId) {
+        try {
+            return campaignsWebClient
+                    .get()
+                    .uri("/v1/campaigns/{campaignId}/coupons", campaignId)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<CampaignCouponLinkResponse>>() {})
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
+
+    @Override
+    public void removeCampaignCoupon(String campaignId, String couponId) {
+        try {
+            campaignsWebClient
+                    .delete()
+                    .uri("/v1/campaigns/{campaignId}/coupons/{couponId}", campaignId, couponId)
+                    .retrieve()
+                    .toBodilessEntity()
                     .block();
         } catch (WebClientResponseException ex) {
             throw gatewayHttpSupport.upstream(ex);

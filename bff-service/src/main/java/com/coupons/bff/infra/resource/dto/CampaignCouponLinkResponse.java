@@ -1,19 +1,22 @@
-package com.coupons.campaigns.infra.resource.dto;
+package com.coupons.bff.infra.resource.dto;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import java.util.UUID;
 
-public class AddCouponToCampaignRequest {
+public class CampaignCouponLinkResponse {
 
-    @NotBlank
-    @Size(max = 128)
+    private UUID couponId;
     private String code;
-
-    /** Título público do prémio/cupom (opcional). */
-    @Size(max = 255)
     private String title;
-
     private Integer priority;
+    private boolean allocated;
+
+    public UUID getCouponId() {
+        return couponId;
+    }
+
+    public void setCouponId(UUID couponId) {
+        this.couponId = couponId;
+    }
 
     public String getCode() {
         return code;
@@ -37,5 +40,13 @@ public class AddCouponToCampaignRequest {
 
     public void setPriority(Integer priority) {
         this.priority = priority;
+    }
+
+    public boolean isAllocated() {
+        return allocated;
+    }
+
+    public void setAllocated(boolean allocated) {
+        this.allocated = allocated;
     }
 }

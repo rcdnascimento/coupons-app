@@ -16,4 +16,6 @@ public interface CouponsGateway {
     CouponResponse createCoupon(CreateCouponRequest request);
 
     CouponResponse patchCoupon(String couponId, UpdateCouponRequest request);
+
+    void deleteCoupon(String couponId);
 }

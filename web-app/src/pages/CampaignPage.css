@@ -62,22 +62,51 @@
   align-items: stretch;
 }
 
-.campaign-detail__meta.campaign-card__top {
+.campaign-detail__media-wrap {
+  position: relative;
   width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--gray-100);
+  aspect-ratio: 16 / 9;
+  max-height: 220px;
+}
+
+.campaign-detail__media-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.campaign-detail__media-placeholder {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #ececec 0%, #d8d8d8 100%);
+}
+
+.campaign-detail__media-overlay {
+  z-index: 1;
 }
 
 .campaign-detail__title {
   font-size: 1.375rem;
   line-height: 1.3;
   margin: 0;
-  margin-bottom: 20px;
 }
 
 .campaign-detail__date {
   line-height: 1.45;
 }
 
+.campaign-detail__prizes {
+  padding-top: 10px;
+}
+
 .campaign-detail__prizes-heading {
+  padding-bottom: 10px;
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text);
@@ -104,6 +133,11 @@
   font-size: 1rem;
   color: var(--text);
   line-height: 1.35;
+}
+
+.campaign-detail__prize-company {
+  font-weight: 600;
+  color: var(--text);
 }
 
 .campaign-detail__prize-qty {

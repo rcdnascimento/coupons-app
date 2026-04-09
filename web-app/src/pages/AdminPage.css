@@ -126,6 +126,63 @@
   }
 }
 
+.admin-create-grid .admin-edit-camp-coupons {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.admin-edit-camp-coupons__title {
+  font-size: 1rem;
+  margin: 0 0 12px;
+}
+
+.admin-edit-camp-coupons__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-edit-camp-coupons__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.admin-edit-camp-coupons__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.admin-edit-camp-coupons__code {
+  font-weight: 700;
+}
+
+.admin-create-coupon-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-create-coupon-code-row input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
 .admin-form {
   display: grid;
   gap: 14px;
@@ -235,9 +292,19 @@
 }
 
 .admin-coupon-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
   padding: 10px 12px;
   background: var(--gray-50);
   border-radius: 8px;
+}
+
+.admin-coupon-list__main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .admin-attach-coupon-hint {
@@ -344,4 +411,170 @@
 
 .admin-points-user-resolved__email {
   font-weight: 500;
+}
+
+.admin-draft-from-campaign {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  background: var(--gray-50);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--gray-100);
+}
+
+.admin-draft-from-campaign__label {
+  margin: 0;
+}
+
+.admin-draft-from-campaign__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.admin-draft-from-campaign__row select {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.admin-draft-from-campaign__hint {
+  margin: 10px 0 0;
+}
+
+.admin-attach-coupon-suggest__row {
+  padding: 2px;
+}
+
+.admin-attach-coupon-suggest__row .admin-attach-coupon-suggest__btn {
+  width: 100%;
+}
+
+.admin-page .admin-attach-coupon-suggest__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-page .admin-attach-queue-add {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
+  padding: 8px 10px;
+  min-height: unset;
+  height: auto;
+  font-size: 0.778rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--white);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-page .admin-attach-queue-add:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.admin-page .admin-attach-queue-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--gray-200);
+  color: var(--gray-400);
+}
+
+.admin-attach-queue {
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  background: var(--gray-50);
+  border-radius: var(--radius-input);
+  border: 1px solid var(--gray-100);
+}
+
+.admin-attach-queue__empty {
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.admin-attach-queue__list {
+  list-style: none;
+  margin: 8px 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-attach-queue__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.admin-attach-queue__item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.admin-attach-queue__code {
+  font-weight: 700;
+}
+
+.admin-attach-queue__title {
+  font-size: 0.833rem;
+}
+
+.admin-attach-queue__prio {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.admin-attach-queue__prio-caption {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-600);
+}
+
+.admin-attach-queue__prio-input {
+  width: 4.5rem;
+  min-height: 40px;
+  height: 40px;
+  padding: 8px 10px;
+  font-size: 0.944rem;
+}
+
+.admin-page .admin-attach-queue__remove {
+  margin-left: auto;
+  padding: 4px 10px;
+  min-height: unset;
+  height: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--gray-500);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.admin-page .admin-attach-queue__remove:hover {
+  background: var(--gray-100);
+  color: var(--text);
+}
+
+.admin-attach-queue__clear {
+  margin: 0;
 }

@@ -172,7 +172,7 @@ function CampaignSubscribedDistributionBlock({
   }, [ui]);
 
   if (!distStarted) {
-    return <p className="ok">Inscrição confirmada</p>;
+    return null;
   }
 
   if (ui === "result") {
@@ -223,7 +223,7 @@ function CampaignSubscribedDistributionBlock({
     ui === "polling" ||
     (inAnimationPhase && distStarted && ui === "registered");
   if (!showDraw) {
-    return <p className="ok">Inscrição confirmada</p>;
+    return null;
   }
 
   const msgs = ui === "polling" ? DIST_POLL_MESSAGES : DIST_DRAW_MESSAGES;
@@ -522,7 +522,7 @@ export default function HomePage() {
 
       <section className="card">
         <h2>Olá, {auth.name}</h2>
-        <p className="muted">Pontos atuais: {balance ?? "indisponível"}</p>
+        <p className="muted">Você tem {balance ?? "indisponível"} moedas</p>
       </section>
 
       <section className="card">
@@ -585,8 +585,19 @@ export default function HomePage() {
               const cardImageUrl = resolveCardImageUrl(c.imageUrl);
               const resultBadgeLabel = distributionResultByCampaign[c.id] || null;
               const resultKey = (resultBadgeLabel || "").toLowerCase();
-              const isResultWon = resultKey.includes("ganhou");
-              const isResultLost = resultKey.includes("não foi") || resultKey.includes("nao foi");
+              const isResultWon = Boolean(resultBadgeLabel && resultKey.includes("ganhou"));
+              const isResultLost = Boolean(
+                resultBadgeLabel &&
+                  (resultKey.includes("não foi") || resultKey.includes("nao foi"))
+              );
+              const showParticipandoBadge = subscribed && !resultBadgeLabel;
+              const bottomResultBadgeText = resultBadgeLabel
+                ? resultBadgeLabel
+                : showParticipandoBadge
+                  ? "Participando"
+                  : state === "fechada"
+                    ? campaignStateBadgeLabel(state, c)
+                    : null;
 
               return (
                 <article
@@ -647,7 +658,7 @@ export default function HomePage() {
                             {campaignPointsCornerLabel(cost)}
                           </span>
                         </div>
-                        {(resultBadgeLabel || state === "fechada") && (
+                        {bottomResultBadgeText && (
                           <p
                             className={
                               "badge badge--campaign-result-badge" +
@@ -655,10 +666,12 @@ export default function HomePage() {
                                 ? " badge--campaign-result-won"
                                 : isResultLost
                                   ? " badge--campaign-result-lost"
-                                  : "")
+                                  : showParticipandoBadge
+                                    ? " badge--campaign-result-neutral"
+                                    : "")
                             }
                           >
-                            {resultBadgeLabel || campaignStateBadgeLabel(state, c)}
+                            {bottomResultBadgeText}
                           </p>
                         )}
                       </div>

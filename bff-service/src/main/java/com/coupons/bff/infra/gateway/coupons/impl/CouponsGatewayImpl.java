@@ -116,4 +116,20 @@ public class CouponsGatewayImpl implements CouponsGateway {
             throw gatewayHttpSupport.unavailable("campaigns-service");
         }
     }
+
+    @Override
+    public void deleteCoupon(String couponId) {
+        try {
+            campaignsWebClient
+                    .delete()
+                    .uri("/v1/coupons/{couponId}", couponId)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw gatewayHttpSupport.upstream(ex);
+        } catch (WebClientException ex) {
+            throw gatewayHttpSupport.unavailable("campaigns-service");
+        }
+    }
 }

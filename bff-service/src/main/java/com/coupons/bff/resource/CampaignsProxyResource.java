@@ -3,6 +3,7 @@ package com.coupons.bff.resource;
 import com.coupons.bff.infra.gateway.campaigns.CampaignsGateway;
 import com.coupons.bff.infra.gateway.profile.ProfileGateway;
 import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
+import com.coupons.bff.infra.resource.dto.CampaignCouponLinkResponse;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnerEntry;
@@ -19,6 +20,7 @@ import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +71,17 @@ public class CampaignsProxyResource {
     public ResponseEntity<CampaignResponse> addCoupon(
             @PathVariable String campaignId, @Valid @RequestBody AddCouponToCampaignRequest body) {
         return ResponseEntity.ok(campaignsGateway.addCoupon(campaignId, body));
+    }
+
+    @GetMapping(value = "/{campaignId}/coupons", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<CampaignCouponLinkResponse>> listCampaignCoupons(@PathVariable String campaignId) {
+        return ResponseEntity.ok(campaignsGateway.listCampaignCoupons(campaignId));
+    }
+
+    @DeleteMapping(value = "/{campaignId}/coupons/{couponId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeCampaignCoupon(@PathVariable String campaignId, @PathVariable String couponId) {
+        campaignsGateway.removeCampaignCoupon(campaignId, couponId);
     }
 
     @PostMapping(value = "/{campaignId}/subscriptions", consumes = MediaType.APPLICATION_JSON_VALUE)

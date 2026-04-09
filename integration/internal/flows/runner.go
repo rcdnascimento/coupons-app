@@ -242,9 +242,15 @@ func (r *Runner) CampaignSubscribe(ctx context.Context) error {
 	}
 
 	couponCode := fmt.Sprintf("IT-COUP-%d", now.UnixNano())
-	add := addCouponRequest{
-		Code: couponCode, ExpiresAt: now.Add(365 * 24 * time.Hour), Priority: 1,
+	exp := now.Add(365 * 24 * time.Hour)
+	couponCreate := createCouponRequest{Code: couponCode, ExpiresAt: exp, Title: "IT coupon"}
+	if code, _, err = httpx.PostJSON(r.Cfg.CampaignsService+"/v1/coupons", couponCreate, nil); err != nil {
+		return err
 	}
+	if code != 201 {
+		return fmt.Errorf("create coupon: HTTP %d", code)
+	}
+	add := addCouponRequest{Code: couponCode, Priority: 1}
 	code, _, err = httpx.PostJSON(
 		fmt.Sprintf("%s/v1/campaigns/%s/coupons", r.Cfg.CampaignsService, camp.ID), add, nil)
 	if err != nil {
@@ -330,9 +336,15 @@ func (r *Runner) PrizePipeline(ctx context.Context) error {
 	}
 
 	couponCode := fmt.Sprintf("IT-PRZ-%d", now.UnixNano())
-	add := addCouponRequest{
-		Code: couponCode, ExpiresAt: now.Add(365 * 24 * time.Hour), Priority: 1,
+	exp := now.Add(365 * 24 * time.Hour)
+	couponCreate := createCouponRequest{Code: couponCode, ExpiresAt: exp, Title: "IT prize coupon"}
+	if code, _, err = httpx.PostJSON(r.Cfg.CampaignsService+"/v1/coupons", couponCreate, nil); err != nil {
+		return err
 	}
+	if code != 201 {
+		return fmt.Errorf("create coupon: HTTP %d", code)
+	}
+	add := addCouponRequest{Code: couponCode, Priority: 1}
 	if code, _, err = httpx.PostJSON(
 		fmt.Sprintf("%s/v1/campaigns/%s/coupons", r.Cfg.CampaignsService, camp.ID), add, nil); err != nil {
 		return err

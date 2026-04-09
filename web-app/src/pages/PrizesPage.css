@@ -33,6 +33,55 @@
   border-bottom: 1px solid var(--gray-100);
 }
 
+.prizes-page__item-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.prizes-page__brand {
+  flex-shrink: 0;
+}
+
+.prizes-page__logo {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: center;
+  background: var(--gray-50, #f5f5f5);
+  border: 1px solid var(--gray-100);
+}
+
+.prizes-page__logo--placeholder {
+  display: block;
+  background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50, #eee) 100%);
+  border-style: dashed;
+}
+
+.prizes-page__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.prizes-page__campaign {
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text, inherit);
+  line-height: 1.4;
+}
+
+.prizes-page__code {
+  font-size: 0.875rem;
+}
+
+.prizes-page__code-value {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
 .prizes-page__item:last-child {
   border-bottom: none;
 }

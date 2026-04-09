@@ -8,6 +8,7 @@ import com.coupons.campaigns.domain.service.CampaignSubscriptionService;
 import com.coupons.campaigns.domain.service.CampaignWinnersService;
 import com.coupons.campaigns.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.campaigns.infra.resource.dto.AllocationResponse;
+import com.coupons.campaigns.infra.resource.dto.CampaignCouponLinkResponse;
 import com.coupons.campaigns.infra.resource.dto.CampaignResponse;
 import com.coupons.campaigns.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.campaigns.infra.resource.dto.CampaignWinnersResponse;
@@ -20,7 +21,16 @@ import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/campaigns")
@@ -79,6 +89,17 @@ public class CampaignsResource {
         return campaignRestMapper.toResponse(
                 campaignCouponService.addCoupon(
                         campaignId, campaignRestMapper.toCouponDraft(request), request.getPriority()));
+    }
+
+    @GetMapping("/{campaignId}/coupons")
+    public List<CampaignCouponLinkResponse> listCampaignCoupons(@PathVariable UUID campaignId) {
+        return campaignCouponService.listLinkedCoupons(campaignId);
+    }
+
+    @DeleteMapping("/{campaignId}/coupons/{couponId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeCampaignCoupon(@PathVariable UUID campaignId, @PathVariable UUID couponId) {
+        campaignCouponService.removeCouponFromCampaign(campaignId, couponId);
     }
 
     @PostMapping("/{campaignId}/subscriptions")

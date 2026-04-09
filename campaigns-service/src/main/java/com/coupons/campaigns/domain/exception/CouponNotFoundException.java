@@ -7,4 +7,8 @@ public class CouponNotFoundException extends RuntimeException {
     public CouponNotFoundException(UUID id) {
         super("Cupom não encontrado: " + id);
     }
+
+    public CouponNotFoundException(String message) {
+        super(message);
+    }
 }

@@ -1,6 +1,7 @@
 package com.coupons.bff.infra.gateway.campaigns;
 
 import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
+import com.coupons.bff.infra.resource.dto.CampaignCouponLinkResponse;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
 import com.coupons.bff.infra.resource.dto.CampaignSummaryResponse;
 import com.coupons.bff.infra.resource.dto.CampaignWinnersResponse;
@@ -25,6 +26,10 @@ public interface CampaignsGateway {
     CampaignResponse patchCampaign(String campaignId, PatchCampaignRequest request);
 
     CampaignResponse addCoupon(String campaignId, AddCouponToCampaignRequest request);
+
+    List<CampaignCouponLinkResponse> listCampaignCoupons(String campaignId);
+
+    void removeCampaignCoupon(String campaignId, String couponId);
 
     void subscribe(String campaignId, UserIdRequest request);
 

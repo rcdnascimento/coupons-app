@@ -166,6 +166,33 @@ export function countdownLabel(targetIso) {
   return parts.join(" ");
 }
 
+const FALLBACK_DIST_OPENS = "Abre em breve";
+
+/**
+ * Tempo até o sorteio/distribuição (`distributionAt`) em texto fixo para o utilizador:
+ * sem contador em tempo real, sem segundos. Para a página de detalhe da campanha.
+ * `null` quando o instante já passou ou não há data.
+ */
+export function distributionCountdownVagueLabel(distributionAtIso) {
+  if (!distributionAtIso) return null;
+  const ms = new Date(distributionAtIso).getTime() - Date.now();
+  if (ms <= 0) return null;
+
+  const days = Math.floor(ms / 86400000);
+  if (days >= 1) {
+    return days === 1 ? "Abre em 1 dia" : `Abre em ${days} dias`;
+  }
+  const hours = Math.floor(ms / 3600000);
+  if (hours >= 1) {
+    return hours === 1 ? "Abre em 1 hora" : `Abre em ${hours} horas`;
+  }
+  const minutes = Math.floor(ms / 60000);
+  if (minutes >= 1) {
+    return minutes === 1 ? "Abre em 1 minuto" : `Abre em ${minutes} minutos`;
+  }
+  return FALLBACK_DIST_OPENS;
+}
+
 /** Custo da campanha em moedas, linguagem simples para o utilizador. */
 export function campaignEntryCostLabel(pointsCost) {
   const n = Math.max(0, Math.floor(Number(pointsCost) || 0));

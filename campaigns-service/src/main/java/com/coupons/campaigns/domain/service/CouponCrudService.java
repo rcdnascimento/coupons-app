@@ -4,6 +4,8 @@ import com.coupons.campaigns.domain.CouponStatus;
 import com.coupons.campaigns.domain.entity.Coupon;
 import com.coupons.campaigns.domain.exception.ConflictException;
 import com.coupons.campaigns.domain.exception.CouponNotFoundException;
+import com.coupons.campaigns.infra.persistence.CampaignAllocationRepository;
+import com.coupons.campaigns.infra.persistence.CampaignCouponRepository;
 import com.coupons.campaigns.infra.persistence.CouponRepository;
 import com.coupons.campaigns.infra.resource.dto.CreateCouponRequest;
 import com.coupons.campaigns.infra.resource.dto.UpdateCouponRequest;
@@ -18,9 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class CouponCrudService {
 
     private final CouponRepository couponRepository;
+    private final CampaignCouponRepository campaignCouponRepository;
+    private final CampaignAllocationRepository campaignAllocationRepository;
 
-    public CouponCrudService(CouponRepository couponRepository) {
+    public CouponCrudService(
+            CouponRepository couponRepository,
+            CampaignCouponRepository campaignCouponRepository,
+            CampaignAllocationRepository campaignAllocationRepository) {
         this.couponRepository = couponRepository;
+        this.campaignCouponRepository = campaignCouponRepository;
+        this.campaignAllocationRepository = campaignAllocationRepository;
     }
 
     @Transactional(readOnly = true)
@@ -56,11 +65,21 @@ public class CouponCrudService {
         Coupon coupon = new Coupon();
         coupon.setCode(code);
         coupon.setExpiresAt(request.getExpiresAt());
-        if (request.getTitle() != null && !request.getTitle().isBlank()) {
-            coupon.setTitle(request.getTitle().trim());
-        }
+        coupon.setTitle(request.getTitle().trim());
         coupon.setStatus(CouponStatus.IN_INVENTORY);
         return couponRepository.save(coupon);
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        Coupon coupon = getById(id);
+        if (campaignCouponRepository.findByCouponId(id).isPresent()) {
+            throw new ConflictException("Cupom associado a uma campanha; remova a associação antes de apagar.");
+        }
+        if (campaignAllocationRepository.existsByCouponId(id)) {
+            throw new ConflictException("Não é possível apagar cupom já alocado.");
+        }
+        couponRepository.delete(coupon);
     }
 
     @Transactional

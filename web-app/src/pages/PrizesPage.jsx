@@ -1,7 +1,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
-import { listPrizesByUser } from "../api";
+import { BFF_BASE_URL, listPrizesByUser } from "../api";
 import "./PrizesPage.css";
+
+function resolveMediaUrl(pathLike) {
+  const s = typeof pathLike === "string" ? pathLike.trim() : "";
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return `${BFF_BASE_URL}${s}`;
+  return `${BFF_BASE_URL}/${s}`;
+}
+
+function formatPrizeDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "long",
+    timeStyle: "short"
+  }).format(d);
+}
+
+function statusLabelForUser(status) {
+  const s = typeof status === "string" ? status.trim().toUpperCase() : "";
+  switch (s) {
+    case "DELIVERED":
+      return "Entregue";
+    case "PENDING":
+      return "Em processamento";
+    case "FAILED":
+    case "ERROR":
+      return "Não foi possível entregar";
+    default:
+      return s ? status : "—";
+  }
+}
 
 export default function PrizesPage() {
   const { auth } = useOutletContext();
@@ -59,13 +92,55 @@ export default function PrizesPage() {
 
       {!loading && !loadFailed && filteredItems.length > 0 && (
         <ul className="prizes-page__list">
-          {filteredItems.map((p) => (
-            <li key={p.id} className="prizes-page__item">
-              <h3 className="prizes-page__item-title">Cupom {p.couponCode}</h3>
-              <p className="muted prizes-page__item-meta">Status: {p.status}</p>
-              <p className="muted prizes-page__item-meta">Campanha: {p.campaignId}</p>
-            </li>
-          ))}
+          {filteredItems.map((p) => {
+            const logoUrl = resolveMediaUrl(p.companyLogoUrl);
+            const campaignName =
+              (p.campaignTitle && String(p.campaignTitle).trim()) || "Campanha";
+            const partnerName = (p.companyName && String(p.companyName).trim()) || "";
+            const prizeHeading =
+              (p.couponTitle && String(p.couponTitle).trim()) || "Seu cupom";
+            const when = formatPrizeDate(p.processedAt);
+
+            return (
+              <li key={p.id} className="prizes-page__item">
+                <div className="prizes-page__item-row">
+                  <div className="prizes-page__brand">
+                    {logoUrl ? (
+                      <img
+                        className="prizes-page__logo"
+                        src={logoUrl}
+                        alt={partnerName ? `Logo ${partnerName}` : "Logo da empresa parceira"}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="prizes-page__logo prizes-page__logo--placeholder" aria-hidden />
+                    )}
+                  </div>
+                  <div className="prizes-page__body">
+                    <h3 className="prizes-page__item-title">{prizeHeading}</h3>
+                    <p className="prizes-page__campaign">{campaignName}</p>
+                    {partnerName ? (
+                      <p className="muted prizes-page__item-meta">
+                        Parceiro: {partnerName}
+                      </p>
+                    ) : null}
+                    {when ? (
+                      <p className="muted prizes-page__item-meta">Recebido em {when}</p>
+                    ) : null}
+                    <p className="muted prizes-page__item-meta">
+                      Situação: {statusLabelForUser(p.status)}
+                    </p>
+                    {p.couponCode ? (
+                      <p className="muted prizes-page__item-meta prizes-page__code">
+                        Código para usar na loja:{" "}
+                        <span className="prizes-page__code-value">{p.couponCode}</span>
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>

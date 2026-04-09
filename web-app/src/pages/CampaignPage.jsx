@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getCampaignSummary, listCampaigns } from "../api";
+import { BFF_BASE_URL, getCampaignSummary, listCampaigns } from "../api";
 import {
   campaignCardDescriptionText,
   campaignPointsCornerLabel,
-  countdownLabel,
+  campaignStateBadgeLabel,
+  distributionCountdownVagueLabel,
   distributionScheduleLabel,
   getCampaignState
 } from "../utils";
 import "./CampaignPage.css";
+
+function resolveCampaignDetailImageUrl(pathLike) {
+  const s = typeof pathLike === "string" ? pathLike.trim() : "";
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return `${BFF_BASE_URL}${s}`;
+  return `${BFF_BASE_URL}/${s}`;
+}
 
 export default function CampaignPage() {
   const { campaignId } = useParams();
@@ -98,6 +107,17 @@ export default function CampaignPage() {
   const campaignState = getCampaignState(campaign);
   const closed = campaignState === "fechada";
   const cost = Math.max(0, Math.floor(Number(campaign.pointsCost) || 0));
+  const detailImageUrl = resolveCampaignDetailImageUrl(campaign.imageUrl);
+  const companyName =
+    typeof campaign.companyName === "string" ? campaign.companyName.trim() : "";
+  const distVague =
+    campaignState === "aberta"
+      ? distributionCountdownVagueLabel(campaign.distributionAt)
+      : null;
+  const showTopBadge =
+    campaignState === "fechada" ||
+    campaignState === "abre_em_breve" ||
+    (campaignState === "aberta" && distVague);
 
   return (
     <main className="page campaign-page">
@@ -119,22 +139,41 @@ export default function CampaignPage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
-          <div className="campaign-card__top campaign-detail__meta">
-            <div className="campaign-card__top-row">
-              <div className="campaign-card__top-left">
-                {campaignState === "fechada" && (
-                  <p className={`badge badge--campaign-state ${campaignState}`}>Encerrada</p>
-                )}
-              </div>
-              <span className="campaign-card__coins" title="Custo de entrada na campanha">
-                {campaignPointsCornerLabel(cost)}
-              </span>
+        </div>
+
+        <div className="campaign-detail__media-wrap">
+          {detailImageUrl ? (
+            <img
+              className="campaign-detail__media-img"
+              src={detailImageUrl}
+              alt={campaign.title || "Imagem da campanha"}
+              decoding="async"
+            />
+          ) : (
+            <div className="campaign-detail__media-placeholder" aria-hidden={true} />
+          )}
+          <div className="campaign-card__top-row campaign-card__top-row--overlay campaign-detail__media-overlay">
+            <div className="campaign-card__top-left">
+              {showTopBadge && (
+                <p
+                  className={`badge badge--campaign-state ${
+                    campaignState === "aberta" && distVague ? "aberta" : campaignState
+                  }`}
+                  aria-live={
+                    campaignState === "abre_em_breve" || (campaignState === "aberta" && distVague)
+                      ? "polite"
+                      : undefined
+                  }
+                >
+                  {campaignState === "aberta" && distVague
+                    ? distVague
+                    : campaignStateBadgeLabel(campaignState, campaign)}
+                </p>
+              )}
             </div>
-            {campaignState === "aberta" && (
-              <p className="campaign-card__countdown-line" aria-live="polite">
-                {countdownLabel(campaign.distributionAt)}
-              </p>
-            )}
+            <span className="campaign-card__coins" title="Custo de entrada na campanha">
+              {campaignPointsCornerLabel(cost)}
+            </span>
           </div>
         </div>
 
@@ -152,7 +191,12 @@ export default function CampaignPage() {
             <ul className="campaign-detail__prize-list">
               {summary.possiblePrizes.map((p, idx) => (
                 <li key={`${idx}-${p.title}`} className="campaign-detail__prize-row">
-                  <span className="campaign-detail__prize-title">{p.title}</span>
+                  <span className="campaign-detail__prize-title">
+                    {companyName ? (
+                      <span className="campaign-detail__prize-company">{companyName} · </span>
+                    ) : null}
+                    {p.title}
+                  </span>
                   <span className="campaign-detail__prize-qty muted">
                     {p.quantity} {p.quantity === 1 ? "unidade" : "unidades"}
                   </span>

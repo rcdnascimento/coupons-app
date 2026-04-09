@@ -14,6 +14,8 @@ public interface CampaignAllocationRepository extends JpaRepository<CampaignAllo
 
     boolean existsByCampaignIdAndUserId(UUID campaignId, UUID userId);
 
+    boolean existsByCouponId(UUID couponId);
+
     List<CampaignAllocation>
             findTop200ByDispatchAttemptCountLessThanEqualAndDispatchLastAttemptAtLessThanEqualOrderByDispatchLastAttemptAtAsc(
                     Integer maxAttempts, Instant eligibleBefore);

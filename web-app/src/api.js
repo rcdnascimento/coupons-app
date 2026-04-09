@@ -194,6 +194,20 @@ export async function addCouponToCampaign(campaignId, payload) {
   });
 }
 
+export async function listCampaignCoupons(campaignId, options = {}) {
+  return requestJson(`${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}/coupons`, {
+    method: "GET",
+    ...options
+  });
+}
+
+export async function removeCouponFromCampaign(campaignId, couponId, options = {}) {
+  return requestJson(
+    `${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}/coupons/${encodeURIComponent(couponId)}`,
+    { method: "DELETE", ...options }
+  );
+}
+
 export async function listCouponsAdmin() {
   return requestJson(`${BFF_BASE_URL}/api/coupons`);
 }
@@ -225,6 +239,13 @@ export async function patchCoupon(couponId, payload) {
   return requestJson(`${BFF_BASE_URL}/api/coupons/${encodeURIComponent(couponId)}`, {
     method: "PATCH",
     body: JSON.stringify(payload)
+  });
+}
+
+export async function deleteCoupon(couponId, options = {}) {
+  return requestJson(`${BFF_BASE_URL}/api/coupons/${encodeURIComponent(couponId)}`, {
+    method: "DELETE",
+    ...options
   });
 }
 

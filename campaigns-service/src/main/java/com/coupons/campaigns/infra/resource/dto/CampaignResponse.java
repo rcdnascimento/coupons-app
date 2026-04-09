@@ -19,6 +19,10 @@ public class CampaignResponse {
     private Instant subscriptionsEndAt;
     private Instant distributionAt;
     private UUID companyId;
+    /** Nome da empresa parceira (quando {@code companyId} está preenchido). */
+    private String companyName;
+    /** URL da logomarca da empresa (quando aplicável). */
+    private String companyLogoUrl;
     private String imageUrl;
     private Instant visibleUntil;
     private CampaignStatus status;
@@ -70,6 +74,22 @@ public class CampaignResponse {
 
     public UUID getCompanyId() {
         return companyId;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getCompanyLogoUrl() {
+        return companyLogoUrl;
+    }
+
+    public void setCompanyLogoUrl(String companyLogoUrl) {
+        this.companyLogoUrl = companyLogoUrl;
     }
 
     public String getImageUrl() {

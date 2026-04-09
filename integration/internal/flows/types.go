@@ -52,10 +52,15 @@ type campaignResponse struct {
 	Status               string    `json:"status"`
 }
 
-type addCouponRequest struct {
+type createCouponRequest struct {
 	Code      string    `json:"code"`
 	ExpiresAt time.Time `json:"expiresAt"`
-	Priority  int       `json:"priority"`
+	Title     string    `json:"title"`
+}
+
+type addCouponRequest struct {
+	Code     string `json:"code"`
+	Priority int    `json:"priority"`
 }
 
 type userIDRequest struct {

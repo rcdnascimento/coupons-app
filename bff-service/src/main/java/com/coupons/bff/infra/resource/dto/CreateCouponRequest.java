@@ -14,6 +14,7 @@ public class CreateCouponRequest {
     @NotNull
     private Instant expiresAt;
 
+    @NotBlank
     @Size(max = 255)
     private String title;
 

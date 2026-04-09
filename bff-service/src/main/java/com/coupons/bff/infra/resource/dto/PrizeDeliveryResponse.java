@@ -13,6 +13,14 @@ public class PrizeDeliveryResponse {
     private String status;
     private Instant processedAt;
 
+    /** Preenchido pelo BFF a partir do serviço de campanhas. */
+    private String campaignTitle;
+    /** Preenchido pelo BFF (empresa parceira da campanha). */
+    private String companyName;
+    private String companyLogoUrl;
+    /** Título público do cupom (inventário). */
+    private String couponTitle;
+
     public UUID getId() {
         return id;
     }
@@ -67,5 +75,37 @@ public class PrizeDeliveryResponse {
 
     public void setProcessedAt(Instant processedAt) {
         this.processedAt = processedAt;
+    }
+
+    public String getCampaignTitle() {
+        return campaignTitle;
+    }
+
+    public void setCampaignTitle(String campaignTitle) {
+        this.campaignTitle = campaignTitle;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getCompanyLogoUrl() {
+        return companyLogoUrl;
+    }
+
+    public void setCompanyLogoUrl(String companyLogoUrl) {
+        this.companyLogoUrl = companyLogoUrl;
+    }
+
+    public String getCouponTitle() {
+        return couponTitle;
+    }
+
+    public void setCouponTitle(String couponTitle) {
+        this.couponTitle = couponTitle;
     }
 }

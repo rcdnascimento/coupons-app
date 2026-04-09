@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,5 +61,11 @@ public class CouponsResource {
     @PatchMapping("/{couponId}")
     public CouponResponse patch(@PathVariable UUID couponId, @Valid @RequestBody UpdateCouponRequest request) {
         return CouponResponse.from(couponCrudService.update(couponId, request));
+    }
+
+    @DeleteMapping("/{couponId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID couponId) {
+        couponCrudService.delete(couponId);
     }
 }

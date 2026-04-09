@@ -7,13 +7,16 @@ import {
   createCompany,
   createCoupon,
   creditUserLedger,
+  deleteCoupon,
   getCampaign,
   getCoupon,
+  listCampaignCoupons,
   listCampaigns,
   listCompaniesAdmin,
   listCouponsAdmin,
   patchCampaign,
   patchCoupon,
+  removeCouponFromCampaign,
   searchCoupons,
   searchUsersAdmin,
   uploadAdminImage,
@@ -48,6 +51,18 @@ function presetDatetimeLocalFromNow(offsetMinutes) {
 function fromDatetimeLocal(str) {
   if (!str) return null;
   return new Date(str).toISOString();
+}
+
+/** Campo prioridade vazio → null (sem prioridade no ranking). */
+function parsePriorityField(raw) {
+  if (raw === "" || raw == null) return null;
+  const n = parseInt(String(raw).trim(), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function newQueueItemId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `q-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function cnpjDigitsOnly(v) {
@@ -221,6 +236,9 @@ export default function AdminPage() {
     distribution: "",
     visibleUntil: ""
   });
+  /** Campanha escolhida para copiar campos ao formulário de criação. */
+  const [newCampDraftSourceId, setNewCampDraftSourceId] = useState("");
+  const [loadingCampDraft, setLoadingCampDraft] = useState(false);
 
   const [editId, setEditId] = useState("");
   const [editCamp, setEditCamp] = useState({
@@ -238,21 +256,25 @@ export default function AdminPage() {
 
   const [attach, setAttach] = useState({
     campaignId: "",
-    code: "",
-    title: "",
-    expires: "",
-    priority: ""
+    code: ""
   });
   const [attachCouponSuggest, setAttachCouponSuggest] = useState([]);
   const [attachCouponSuggestLoading, setAttachCouponSuggestLoading] = useState(false);
   const [attachCodeFocused, setAttachCodeFocused] = useState(false);
-  /** Cupom escolhido na pesquisa (inventário); obrigatório para associar à campanha. */
-  const [attachResolvedCoupon, setAttachResolvedCoupon] = useState(null);
+  /** Cupons escolhidos para associar de uma vez (código/título do inventário). */
+  const [attachQueue, setAttachQueue] = useState([]);
+  const [attachBulkSubmitting, setAttachBulkSubmitting] = useState(false);
   const attachSuggestBlurTimer = useRef(null);
 
   const [newCoupon, setNewCoupon] = useState({ code: "", title: "", expires: "" });
+  /** Códigos na fila para criar vários cupons com o mesmo título e validade. */
+  const [createCouponQueue, setCreateCouponQueue] = useState([]);
+  const [createCouponBulkSubmitting, setCreateCouponBulkSubmitting] = useState(false);
   const [editCouponId, setEditCouponId] = useState("");
   const [editCoupon, setEditCoupon] = useState({ title: "", expires: "" });
+  const [editCampCoupons, setEditCampCoupons] = useState([]);
+  const [editCampCouponsLoading, setEditCampCouponsLoading] = useState(false);
+  const [removingCampCouponId, setRemovingCampCouponId] = useState(null);
 
   const [pointsForm, setPointsForm] = useState({ userId: "", amount: "", reason: "" });
   const [pointsUserQuery, setPointsUserQuery] = useState("");
@@ -326,14 +348,19 @@ export default function AdminPage() {
 
   const canSubmitAttachCamp = useMemo(() => {
     if (!attach.campaignId) return false;
-    if (!attachResolvedCoupon || attachResolvedCoupon.code !== attach.code.trim()) return false;
-    if (!attach.expires?.trim()) return false;
-    return Boolean(fromDatetimeLocal(attach.expires));
-  }, [attach, attachResolvedCoupon]);
+    if (attachQueue.length === 0) return false;
+    return true;
+  }, [attach.campaignId, attachQueue.length]);
 
   const canSubmitCreateCoupon = useMemo(
-    () => Boolean(newCoupon.code.trim() && newCoupon.expires?.trim() && fromDatetimeLocal(newCoupon.expires)),
-    [newCoupon]
+    () =>
+      Boolean(
+        createCouponQueue.length > 0 &&
+          newCoupon.title.trim() &&
+          newCoupon.expires?.trim() &&
+          fromDatetimeLocal(newCoupon.expires)
+      ),
+    [createCouponQueue.length, newCoupon.title, newCoupon.expires]
   );
 
   const canSubmitCreateCompany = useMemo(() => {
@@ -385,7 +412,8 @@ export default function AdminPage() {
       setAttachCouponSuggest([]);
       setAttachCouponSuggestLoading(false);
       setAttachCodeFocused(false);
-      setAttachResolvedCoupon(null);
+      setAttachQueue([]);
+      setAttachBulkSubmitting(false);
       if (attachSuggestBlurTimer.current) {
         clearTimeout(attachSuggestBlurTimer.current);
         attachSuggestBlurTimer.current = null;
@@ -477,20 +505,57 @@ export default function AdminPage() {
     }, 180);
   }
 
-  function pickAttachCoupon(c) {
+  /** Pesquisa + clique na sugestão: adiciona à lista (nunca só “um cupom” fora da lista). */
+  function selectCouponToAttach(c) {
     if (attachSuggestBlurTimer.current) {
       clearTimeout(attachSuggestBlurTimer.current);
       attachSuggestBlurTimer.current = null;
     }
-    setAttachResolvedCoupon({ id: c.id, code: c.code });
-    setAttach((s) => ({
-      ...s,
-      code: c.code,
-      title: c.title || "",
-      expires: toDatetimeLocalValue(c.expiresAt)
-    }));
+    setAttachQueue((prev) => {
+      if (prev.some((x) => x.id === c.id)) return prev;
+      return [...prev, { id: c.id, code: c.code, title: c.title || "", priority: null }];
+    });
+    setAttach((s) => ({ ...s, code: "" }));
     setAttachCouponSuggest([]);
     setAttachCodeFocused(false);
+  }
+
+  function removeAttachCouponFromQueue(id) {
+    setAttachQueue((prev) => prev.filter((x) => x.id !== id));
+  }
+
+  function updateAttachQueueItemPriority(id, raw) {
+    const p = parsePriorityField(raw);
+    setAttachQueue((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, priority: p } : x))
+    );
+  }
+
+  async function applyNewCampFromExisting() {
+    if (!newCampDraftSourceId) {
+      notifyError("Escolha uma campanha para copiar.");
+      return;
+    }
+    try {
+      setLoadingCampDraft(true);
+      const c = await getCampaign(newCampDraftSourceId);
+      setNewCamp({
+        title: c.title || "",
+        description: c.description != null ? String(c.description) : "",
+        pointsCost: String(c.pointsCost ?? 0),
+        companyId: c.companyId ? String(c.companyId) : "",
+        imageUrl: c.imageUrl || "",
+        subStart: toDatetimeLocalValue(c.subscriptionsStartAt),
+        subEnd: toDatetimeLocalValue(c.subscriptionsEndAt),
+        distribution: toDatetimeLocalValue(c.distributionAt),
+        visibleUntil: c.visibleUntil ? toDatetimeLocalValue(c.visibleUntil) : ""
+      });
+      notifySuccess("Formulário preenchido a partir da campanha selecionada. Ajuste os dados antes de criar.");
+    } catch {
+      /* toast em api.js */
+    } finally {
+      setLoadingCampDraft(false);
+    }
   }
 
   function onPointsUserFocus() {
@@ -627,6 +692,54 @@ export default function AdminPage() {
     }
   }
 
+  useEffect(() => {
+    if (panel !== PANEL.CAMP_EDIT) {
+      setEditCampCoupons([]);
+      setEditCampCouponsLoading(false);
+      return undefined;
+    }
+    if (!editId) {
+      setEditCampCoupons([]);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setEditCampCouponsLoading(true);
+        const linked = await listCampaignCoupons(editId);
+        if (!cancelled) setEditCampCoupons(Array.isArray(linked) ? linked : []);
+      } catch {
+        if (!cancelled) setEditCampCoupons([]);
+      } finally {
+        if (!cancelled) setEditCampCouponsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [panel, editId]);
+
+  async function onRemoveCouponFromEditCampaign(couponId) {
+    if (!editId || !couponId) return;
+    const row = editCampCoupons.find((x) => x.couponId === couponId);
+    if (row?.allocated) {
+      notifyError("Este cupom já foi alocado; não é possível remover a associação.");
+      return;
+    }
+    if (!window.confirm("Remover este cupom da campanha? O cupom volta ao inventário.")) return;
+    try {
+      setRemovingCampCouponId(couponId);
+      await removeCouponFromCampaign(editId, couponId);
+      notifySuccess("Associação removida.");
+      setEditCampCoupons((prev) => prev.filter((x) => x.couponId !== couponId));
+      await refreshCoupons();
+    } catch {
+      /* toast em api.js */
+    } finally {
+      setRemovingCampCouponId(null);
+    }
+  }
+
   async function onPatchCampaign(e) {
     e.preventDefault();
     if (!editId) return;
@@ -670,48 +783,141 @@ export default function AdminPage() {
 
   async function onAttachCoupon(e) {
     e.preventDefault();
+    if (!attach.campaignId) {
+      notifyError("Escolha uma campanha.");
+      return;
+    }
+    const items = attachQueue.map((x) => ({
+      code: x.code,
+      title: x.title?.trim() || undefined,
+      priority: x.priority === null || x.priority === undefined ? undefined : x.priority
+    }));
+    if (items.length === 0) {
+      notifyError("Busque pelo código e toque num cupom da lista para adicioná-lo.");
+      return;
+    }
     try {
-      const expiresAt = fromDatetimeLocal(attach.expires);
-      if (
-        !attach.campaignId ||
-        !attachResolvedCoupon ||
-        attachResolvedCoupon.code !== attach.code.trim() ||
-        !expiresAt
-      ) {
-        notifyError("Escolha uma campanha, selecione um cupom da lista e preencha a validade.");
-        return;
+      setAttachBulkSubmitting(true);
+      let ok = 0;
+      const errors = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          const body = {
+            code: item.code
+          };
+          if (item.priority !== undefined) body.priority = item.priority;
+          if (item.title) body.title = item.title;
+          await addCouponToCampaign(attach.campaignId, body);
+          ok += 1;
+        } catch (err) {
+          const msg = (err && err.message) || "erro";
+          errors.push(`${item.code}: ${msg}`);
+        }
       }
-      const body = {
-        code: attach.code.trim(),
-        expiresAt,
-        priority: attach.priority === "" ? undefined : parseInt(attach.priority, 10)
-      };
-      if (attach.title.trim()) body.title = attach.title.trim();
-      await addCouponToCampaign(attach.campaignId, body);
-      notifySuccess("Cupom associado a campanha.");
-      setAttachResolvedCoupon(null);
-      setAttach({ campaignId: attach.campaignId, code: "", title: "", expires: "", priority: "" });
+      if (ok > 0) {
+        notifySuccess(
+          ok === 1 ? "Cupom associado à campanha." : `${ok} cupons associados à campanha.`
+        );
+      }
+      if (errors.length > 0) {
+        notifyError(
+          errors.length <= 2
+            ? errors.join(" ")
+            : `${errors.slice(0, 2).join(" ")} (+${errors.length - 2} outros)`
+        );
+      }
+      setAttachQueue([]);
+      setAttach({
+        campaignId: attach.campaignId,
+        code: ""
+      });
       await refreshCampaigns();
-    } catch {
-      /* toast em api.js */
+    } finally {
+      setAttachBulkSubmitting(false);
     }
   }
 
-  async function onCreateCoupon(e) {
+  function addCodeToCreateCouponQueue() {
+    const code = newCoupon.code.trim();
+    if (!code) {
+      notifyError("Escreva um código antes de adicionar à fila.");
+      return;
+    }
+    const norm = code.toUpperCase();
+    if (createCouponQueue.some((x) => x.code.toUpperCase() === norm)) {
+      notifyError("Este código já está na fila.");
+      return;
+    }
+    setCreateCouponQueue((prev) => [...prev, { id: newQueueItemId(), code }]);
+    setNewCoupon((s) => ({ ...s, code: "" }));
+  }
+
+  function removeFromCreateCouponQueue(id) {
+    setCreateCouponQueue((prev) => prev.filter((x) => x.id !== id));
+  }
+
+  async function onCreateCouponsBulk(e) {
     e.preventDefault();
+    const expiresAt = fromDatetimeLocal(newCoupon.expires);
+    if (createCouponQueue.length === 0 || !newCoupon.title.trim() || !expiresAt) {
+      notifyError("Adicione pelo menos um código à fila, preencha título e validade.");
+      return;
+    }
     try {
-      const expiresAt = fromDatetimeLocal(newCoupon.expires);
-      if (!newCoupon.code.trim() || !expiresAt) {
-        notifyError("Código e validade são obrigatórios.");
-        return;
+      setCreateCouponBulkSubmitting(true);
+      let ok = 0;
+      const errors = [];
+      const remaining = [];
+      for (const item of createCouponQueue) {
+        try {
+          await createCoupon({
+            code: item.code.trim(),
+            expiresAt,
+            title: newCoupon.title.trim()
+          });
+          ok += 1;
+        } catch (err) {
+          remaining.push(item);
+          const msg = (err && err.message) || "erro";
+          errors.push(`${item.code}: ${msg}`);
+        }
       }
-      await createCoupon({
-        code: newCoupon.code.trim(),
-        expiresAt,
-        title: newCoupon.title.trim() || undefined
-      });
-      notifySuccess("Cupom criado.");
-      setNewCoupon({ code: "", title: "", expires: "" });
+      setCreateCouponQueue(remaining);
+      if (ok > 0) {
+        notifySuccess(ok === 1 ? "Cupom criado." : `${ok} cupons criados.`);
+      }
+      if (errors.length > 0) {
+        notifyError(
+          errors.length <= 2
+            ? errors.join(" ")
+            : `${errors.slice(0, 2).join(" ")} (+${errors.length - 2} outros)`
+        );
+      }
+      if (ok > 0 && remaining.length === 0) {
+        setNewCoupon((s) => ({ ...s, title: "", expires: s.expires }));
+      }
+      await refreshCoupons();
+    } finally {
+      setCreateCouponBulkSubmitting(false);
+    }
+  }
+
+  async function onDeleteInventoryCoupon(coupon) {
+    if (coupon.status !== "IN_INVENTORY") {
+      notifyError("Só é possível apagar cupons no inventário (não associados a campanha).");
+      return;
+    }
+    if (!window.confirm(`Apagar o cupom ${coupon.code} do inventário? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+    try {
+      await deleteCoupon(coupon.id);
+      notifySuccess("Cupom apagado.");
+      if (editCouponId === coupon.id) {
+        setEditCouponId("");
+        setEditCoupon({ title: "", expires: "" });
+      }
       await refreshCoupons();
     } catch {
       /* toast em api.js */
@@ -819,7 +1025,7 @@ export default function AdminPage() {
               className={`ghost admin-hub__btn${panel === PANEL.CAMP_ATTACH ? " admin-hub__btn--active" : ""}`}
               onClick={() => openPanel(PANEL.CAMP_ATTACH)}
             >
-              Associar cupom
+              Associar cupons
             </button>
           </div>
         </article>
@@ -919,6 +1125,37 @@ export default function AdminPage() {
         {panel === PANEL.CAMP_CREATE && (
           <>
             <h2 className="admin-workspace__heading">Criar campanha</h2>
+            <div className="admin-draft-from-campaign">
+              <label className="admin-inline-label admin-draft-from-campaign__label">
+                Usar campanha existente como rascunho
+                <div className="admin-draft-from-campaign__row">
+                  <select
+                    value={newCampDraftSourceId}
+                    onChange={(e) => setNewCampDraftSourceId(e.target.value)}
+                    aria-label="Campanha para copiar como rascunho"
+                  >
+                    <option value="">Selecione…</option>
+                    {campaigns.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={!newCampDraftSourceId || loadingCampDraft}
+                    onClick={applyNewCampFromExisting}
+                  >
+                    {loadingCampDraft ? "A carregar…" : "Preencher formulário"}
+                  </button>
+                </div>
+              </label>
+              <p className="muted tiny admin-draft-from-campaign__hint">
+                Copia título, descrição, custo em moedas, empresa, imagem e datas. Revise tudo antes de criar a nova
+                campanha.
+              </p>
+            </div>
             <div className="admin-create-grid">
               <form className="admin-form" onSubmit={onCreateCampaign}>
                 <label>
@@ -1146,6 +1383,44 @@ export default function AdminPage() {
                   <h3 className="admin-preview__title">Pré-visualização no app</h3>
                   <CampaignPreviewCard draft={editPreviewDraft} />
                 </div>
+                <section className="admin-edit-camp-coupons" aria-labelledby="admin-edit-camp-coupons-heading">
+                  <h3 id="admin-edit-camp-coupons-heading" className="admin-edit-camp-coupons__title">
+                    Cupons associados a esta campanha
+                  </h3>
+                  {editCampCouponsLoading ? (
+                    <p className="muted tiny">A carregar…</p>
+                  ) : editCampCoupons.length === 0 ? (
+                    <p className="muted tiny">Nenhum cupom associado. Use a secção Associar cupons para vincular.</p>
+                  ) : (
+                    <ul className="admin-edit-camp-coupons__list">
+                      {editCampCoupons.map((row) => (
+                        <li key={row.couponId} className="admin-edit-camp-coupons__item">
+                          <div className="admin-edit-camp-coupons__main">
+                            <span className="admin-edit-camp-coupons__code">{row.code}</span>
+                            {row.title ? <span className="muted admin-edit-camp-coupons__title">{row.title}</span> : null}
+                            <span className="muted tiny">
+                              Prioridade: {row.priority != null ? row.priority : "nenhuma"}
+                              {row.allocated ? ", já alocado" : ""}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="ghost tiny"
+                            disabled={row.allocated || removingCampCouponId === row.couponId}
+                            title={
+                              row.allocated
+                                ? "Não é possível remover cupom já alocado a um participante"
+                                : "Remove só a associação; o cupom volta ao inventário"
+                            }
+                            onClick={() => onRemoveCouponFromEditCampaign(row.couponId)}
+                          >
+                            {removingCampCouponId === row.couponId ? "A remover…" : "Remover da campanha"}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               </div>
             ) : (
               <p className="muted">Escolha uma campanha na lista.</p>
@@ -1155,7 +1430,7 @@ export default function AdminPage() {
 
         {panel === PANEL.CAMP_ATTACH && (
           <>
-            <h2 className="admin-workspace__heading">Associar cupom à campanha</h2>
+            <h2 className="admin-workspace__heading">Associar cupons à campanha</h2>
             <form className="admin-form" onSubmit={onAttachCoupon}>
               <label>
                 Campanha
@@ -1172,20 +1447,68 @@ export default function AdminPage() {
                   ))}
                 </select>
               </label>
+              <div className="admin-attach-queue">
+                <p className="muted tiny">
+                  Cupons ({attachQueue.length}
+                  {attachQueue.length === 1 ? " selecionado" : " selecionados"})
+                </p>
+                {attachQueue.length === 0 ? (
+                  <p className="muted tiny admin-attach-queue__empty">
+                    Ainda vazio: escreva o código abaixo e toque num resultado da lista para incluir.
+                  </p>
+                ) : (
+                  <>
+                    <ul className="admin-attach-queue__list">
+                      {attachQueue.map((x) => (
+                        <li key={x.id} className="admin-attach-queue__item">
+                          <div className="admin-attach-queue__item-main">
+                            <span className="admin-attach-queue__code">{x.code}</span>
+                            {x.title ? <span className="admin-attach-queue__title muted">{x.title}</span> : null}
+                          </div>
+                          <label className="admin-attach-queue__prio">
+                            <span className="admin-attach-queue__prio-caption">Prioridade</span>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              className="admin-attach-queue__prio-input"
+                              value={x.priority === null || x.priority === undefined ? "" : x.priority}
+                              onChange={(e) => updateAttachQueueItemPriority(x.id, e.target.value)}
+                              placeholder=""
+                              aria-label={`Prioridade do cupom ${x.code}`}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="admin-attach-queue__remove"
+                            aria-label={`Remover ${x.code}`}
+                            onClick={() => removeAttachCouponFromQueue(x.id)}
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      className="ghost tiny admin-attach-queue__clear"
+                      onClick={() => setAttachQueue([])}
+                    >
+                      Remover todos
+                    </button>
+                  </>
+                )}
+              </div>
               <label className="admin-attach-coupon-field">
-                Código do cupom
+                Buscar cupom no inventário
                 <div className="admin-attach-coupon-wrap">
                   <input
                     autoComplete="off"
                     value={attach.code}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setAttach((s) => ({ ...s, code: v }));
-                      setAttachResolvedCoupon((prev) => (prev && prev.code === v.trim() ? prev : null));
-                    }}
+                    onChange={(e) => setAttach((s) => ({ ...s, code: e.target.value }))}
                     onFocus={onAttachCodeFocus}
                     onBlur={onAttachCodeBlur}
-                    required
+                    placeholder="Digite o código ou parte dele…"
                     aria-autocomplete="list"
                     aria-controls="admin-attach-coupon-suggest-list"
                     aria-expanded={
@@ -1209,55 +1532,52 @@ export default function AdminPage() {
                         </li>
                       )}
                       {!attachCouponSuggestLoading &&
-                        attachCouponSuggest.map((c) => (
-                          <li key={c.id} role="option">
-                            <button
-                              type="button"
-                              className="admin-attach-coupon-suggest__btn"
-                              onMouseDown={(ev) => ev.preventDefault()}
-                              onClick={() => pickAttachCoupon(c)}
-                            >
-                              <span className="admin-attach-coupon-suggest__code">{c.code}</span>
-                              {c.title ? (
-                                <span className="admin-attach-coupon-suggest__title muted">
-                                  {c.title}
+                        attachCouponSuggest.map((c) => {
+                          const alreadyInList = attachQueue.some((x) => x.id === c.id);
+                          return (
+                            <li key={c.id} role="option" className="admin-attach-coupon-suggest__row">
+                              <button
+                                type="button"
+                                className="admin-attach-coupon-suggest__btn"
+                                onMouseDown={(ev) => ev.preventDefault()}
+                                disabled={alreadyInList}
+                                title={alreadyInList ? "Já está na lista" : "Adicionar à lista de cupons"}
+                                onClick={() => selectCouponToAttach(c)}
+                              >
+                                <span className="admin-attach-coupon-suggest__code">{c.code}</span>
+                                {c.title ? (
+                                  <span className="admin-attach-coupon-suggest__title muted">
+                                    {c.title}
+                                  </span>
+                                ) : null}
+                                <span className="admin-attach-coupon-suggest__meta muted">
+                                  {alreadyInList ? "já na lista" : c.status}
                                 </span>
-                              ) : null}
-                              <span className="admin-attach-coupon-suggest__meta muted">{c.status}</span>
-                            </button>
-                          </li>
-                        ))}
+                              </button>
+                            </li>
+                          );
+                        })}
                     </ul>
                   )}
                 </div>
               </label>
-              <label>
-                Título público (opcional)
-                <input
-                  value={attach.title}
-                  onChange={(e) => setAttach((s) => ({ ...s, title: e.target.value }))}
-                />
-              </label>
-              <AdminDatetimeField
-                label="Validade"
-                value={attach.expires}
-                onChange={(v) => setAttach((s) => ({ ...s, expires: v }))}
-                required
-              />
-              <label>
-                Prioridade (opcional)
-                <input
-                  type="number"
-                  value={attach.priority}
-                  onChange={(e) => setAttach((s) => ({ ...s, priority: e.target.value }))}
-                />
-              </label>
               <p className="muted tiny admin-attach-coupon-hint">
-                Selecione um cupom na lista de sugestões (inventário). Editar o código após selecionar limpa a
-                seleção.
+                Só é possível associar cupons que estiverem na lista (toque em cada resultado da busca). A validade é
+                a do próprio cupom no inventário. Em cada linha, a prioridade define a ordem no ranking de vencedores
+                (1 melhor que 2; vazio perde para qualquer número). Inventário: IN_INVENTORY.
               </p>
-              <button type="submit" className="secondary" disabled={!canSubmitAttachCamp}>
-                Associar
+              <button
+                type="submit"
+                className="secondary"
+                disabled={!canSubmitAttachCamp || attachBulkSubmitting}
+              >
+                {attachBulkSubmitting
+                  ? "A associar…"
+                  : attachQueue.length > 1
+                    ? `Associar ${attachQueue.length} cupons`
+                    : attachQueue.length === 1
+                      ? "Associar 1 cupom"
+                      : "Associar cupons"}
               </button>
             </form>
           </>
@@ -1266,30 +1586,93 @@ export default function AdminPage() {
         {panel === PANEL.COUPON_CREATE && (
           <>
             <h2 className="admin-workspace__heading">Novo cupom (inventário)</h2>
-            <form className="admin-form" onSubmit={onCreateCoupon}>
+            <form className="admin-form" onSubmit={onCreateCouponsBulk}>
+              <div className="admin-attach-queue">
+                <p className="muted tiny">
+                  Códigos na fila ({createCouponQueue.length}
+                  {createCouponQueue.length === 1 ? " cupom" : " cupons"})
+                </p>
+                {createCouponQueue.length === 0 ? (
+                  <p className="muted tiny admin-attach-queue__empty">
+                    Ainda vazio: escreva um código abaixo e use Adicionar à fila (ou Enter).
+                  </p>
+                ) : (
+                  <>
+                    <ul className="admin-attach-queue__list">
+                      {createCouponQueue.map((x) => (
+                        <li key={x.id} className="admin-attach-queue__item">
+                          <div className="admin-attach-queue__item-main">
+                            <span className="admin-attach-queue__code">{x.code}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="admin-attach-queue__remove"
+                            aria-label={`Remover ${x.code}`}
+                            onClick={() => removeFromCreateCouponQueue(x.id)}
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      className="ghost tiny admin-attach-queue__clear"
+                      onClick={() => setCreateCouponQueue([])}
+                    >
+                      Remover todos
+                    </button>
+                  </>
+                )}
+              </div>
               <label>
-                Código
-                <input
-                  value={newCoupon.code}
-                  onChange={(e) => setNewCoupon((s) => ({ ...s, code: e.target.value }))}
-                  required
-                />
+                Código (para adicionar à fila)
+                <div className="admin-create-coupon-code-row">
+                  <input
+                    value={newCoupon.code}
+                    onChange={(e) => setNewCoupon((s) => ({ ...s, code: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCodeToCreateCouponQueue();
+                      }
+                    }}
+                    placeholder="Ex.: PROMO-001"
+                  />
+                  <button type="button" className="secondary" onClick={addCodeToCreateCouponQueue}>
+                    Adicionar à fila
+                  </button>
+                </div>
               </label>
               <label>
-                Título (opcional)
+                Título
                 <input
                   value={newCoupon.title}
                   onChange={(e) => setNewCoupon((s) => ({ ...s, title: e.target.value }))}
+                  required
                 />
               </label>
               <AdminDatetimeField
-                label="Validade"
+                label="Validade (comum a todos os códigos da fila)"
                 value={newCoupon.expires}
                 onChange={(v) => setNewCoupon((s) => ({ ...s, expires: v }))}
                 required
               />
-              <button type="submit" className="primary" disabled={!canSubmitCreateCoupon}>
-                Criar cupom
+              <p className="muted tiny">
+                Todos os cupons criados de uma vez partilham o mesmo título e a mesma validade; só o código muda.
+              </p>
+              <button
+                type="submit"
+                className="primary"
+                disabled={!canSubmitCreateCoupon || createCouponBulkSubmitting}
+              >
+                {createCouponBulkSubmitting
+                  ? "A criar…"
+                  : createCouponQueue.length > 1
+                    ? `Criar ${createCouponQueue.length} cupons`
+                    : createCouponQueue.length === 1
+                      ? "Criar 1 cupom"
+                      : "Criar cupons"}
               </button>
             </form>
           </>
@@ -1304,7 +1687,7 @@ export default function AdminPage() {
                 <option value="">Selecione...</option>
                 {coupons.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.code} {c.title ? `— ${c.title}` : ""}
+                    {c.code}{c.title ? ` ${c.title}` : ""}
                   </option>
                 ))}
               </select>
@@ -1341,9 +1724,16 @@ export default function AdminPage() {
               {coupons.length === 0 && <li className="muted">Nenhum cupom listado.</li>}
               {coupons.map((c) => (
                 <li key={c.id}>
-                  <strong>{c.code}</strong>
-                  <span className="muted"> {c.status}</span>
-                  {c.title && <span className="muted"> — {c.title}</span>}
+                  <div className="admin-coupon-list__main">
+                    <strong>{c.code}</strong>
+                    <span className="muted"> {c.status}</span>
+                    {c.title && <span className="muted"> {c.title}</span>}
+                  </div>
+                  {c.status === "IN_INVENTORY" ? (
+                    <button type="button" className="ghost tiny" onClick={() => onDeleteInventoryCoupon(c)}>
+                      Apagar
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -1412,7 +1802,7 @@ export default function AdminPage() {
               {pointsResolvedUser && (
                 <p className="muted tiny admin-points-user-resolved">
                   <span className="admin-points-user-resolved__name">{pointsResolvedUser.name}</span>
-                  <span className="admin-points-user-resolved__email"> — {pointsResolvedUser.email}</span>
+                  <span className="admin-points-user-resolved__email"> {pointsResolvedUser.email}</span>
                 </p>
               )}
               <label>

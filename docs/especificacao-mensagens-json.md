@@ -161,15 +161,17 @@ Base: `/v1/campaigns`
 
 #### AddCouponToCampaignRequest
 
+O cupom com `code` deve já existir no inventário; a validade (`expiresAt`) é a do registo do cupom, não deste pedido.
+
 ```json
 {
   "code": "string",
-  "expiresAt": "instant",
+  "title": "string",
   "priority": 0
 }
 ```
 
-`priority` é opcional no modelo (pode ser omitido ou `null`).
+`title` e `priority` são opcionais (podem ser omitidos ou `null`).
 
 #### UserIdRequest
 

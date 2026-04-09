@@ -458,6 +458,11 @@ button:disabled {
   color: #7d4a4a !important;
 }
 
+.badge--campaign-result-neutral {
+  background: var(--gray-100, #ececec) !important;
+  color: var(--gray-700, #3d3d3d) !important;
+}
+
 .campaign-card__countdown-line {
   margin: 0;
   width: 100%;

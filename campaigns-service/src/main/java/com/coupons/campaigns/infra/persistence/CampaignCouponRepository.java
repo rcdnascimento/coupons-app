@@ -2,6 +2,7 @@ package com.coupons.campaigns.infra.persistence;
 
 import com.coupons.campaigns.domain.entity.CampaignCoupon;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,8 @@ public interface CampaignCouponRepository extends JpaRepository<CampaignCoupon, 
     List<UUID> findLinkedCouponIdsNotYetAllocated(@Param("campaignId") UUID campaignId);
 
     List<CampaignCoupon> findByCampaignIdOrderByPriorityAsc(UUID campaignId);
+
+    Optional<CampaignCoupon> findByCampaignIdAndCouponId(UUID campaignId, UUID couponId);
+
+    Optional<CampaignCoupon> findByCouponId(UUID couponId);
 }

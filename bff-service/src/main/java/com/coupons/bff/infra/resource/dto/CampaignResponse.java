@@ -12,6 +12,8 @@ public class CampaignResponse {
     private Instant subscriptionsEndAt;
     private Instant distributionAt;
     private UUID companyId;
+    private String companyName;
+    private String companyLogoUrl;
     private String imageUrl;
     private Instant visibleUntil;
     private CampaignStatus status;
@@ -73,6 +75,22 @@ public class CampaignResponse {
 
     public void setCompanyId(UUID companyId) {
         this.companyId = companyId;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getCompanyLogoUrl() {
+        return companyLogoUrl;
+    }
+
+    public void setCompanyLogoUrl(String companyLogoUrl) {
+        this.companyLogoUrl = companyLogoUrl;
     }
 
     public String getImageUrl() {
