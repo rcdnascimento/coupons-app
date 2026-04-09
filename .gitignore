@@ -10,9 +10,9 @@ build/
 *.log
 /scripts/
 
-*/build/*
-*/out/*
-*/bin/*
+# Saídas de IDE / cópias (aninhar com ** — */bin/* não ignora bin/main/...)
+**/bin/
+**/out/
 
 # Frontend (web-app)
 web-app/node_modules/
