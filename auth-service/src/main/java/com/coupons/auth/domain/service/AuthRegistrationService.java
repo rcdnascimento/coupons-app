@@ -29,7 +29,7 @@ public class AuthRegistrationService {
     @Transactional
     public User register(User newUser, String rawPassword) {
         if (userRepository.existsByEmail(newUser.getEmail())) {
-            throw new EmailAlreadyInUseException(newUser.getEmail());
+            throw new EmailAlreadyInUseException();
         }
         newUser.setPasswordHash(passwordEncoder.encode(rawPassword));
         userRepository.save(newUser);

@@ -65,7 +65,7 @@ export default function LoginPage({ onAuth }) {
               {loading ? "Entrando..." : "Entrar"}
             </button>
           </form>
-          {error && <p className="error">{error}</p>}
+          {error && <p className="auth-page__error">{error}</p>}
           <p className="muted tiny auth-page__register-line">
             <span>Não tem conta?</span>
             <Link to="/register" className="auth-page__register-link">

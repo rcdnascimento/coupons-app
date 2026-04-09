@@ -597,6 +597,17 @@ button:disabled {
   border-radius: 8px;
 }
 
+/* Login / registo: mensagens de erro em vermelho claro */
+.auth-page .auth-page__error {
+  color: #ef5350;
+  margin-top: 10px;
+  font-size: 0.944rem;
+  padding: 10px 12px;
+  background: rgba(239, 83, 80, 0.1);
+  border: 0;
+  border-radius: 8px;
+}
+
 .result {
   background: var(--gray-40);
   border: 0;

@@ -97,9 +97,9 @@ export default function RegisterPage({ onAuth }) {
               {loading ? "Criando..." : "Criar conta"}
             </button>
           </form>
-          {error && <p className="error">{error}</p>}
+          {error && <p className="auth-page__error">{error}</p>}
           <p className="muted tiny">
-            Ja tem conta? <Link to="/login">Entrar</Link>
+            Já tem conta? <Link to="/login">Entrar</Link>
           </p>
         </div>
       </div>
