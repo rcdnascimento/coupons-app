@@ -3,6 +3,7 @@ package com.coupons.auth.domain.entity;
 import java.time.Instant;
 import java.util.UUID;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.PrePersist;
@@ -33,6 +34,10 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Convert(converter = UserRoleJpaConverter.class)
+    @Column(name = "role", nullable = false, length = 16)
+    private UserRole role = UserRole.USER;
+
     @PrePersist
     void prePersist() {
         if (id == null) {
@@ -40,6 +45,9 @@ public class User {
         }
         if (createdAt == null) {
             createdAt = Instant.now();
+        }
+        if (role == null) {
+            role = UserRole.USER;
         }
     }
 
@@ -89,5 +97,13 @@ public class User {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 }

@@ -14,10 +14,9 @@ export default function AccountPage() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const bal = await getMeBalance(auth.userId).catch(() => null);
+      const bal = await getMeBalance().catch(() => null);
       setBalance(bal?.balance ?? null);
       const profileOut = await getMeProfile({
-        userId: auth.userId,
         name: auth.name,
         email: auth.email
       }).catch(() => null);

@@ -58,27 +58,30 @@
   min-width: var(--btn-height);
   min-height: var(--btn-height);
   height: var(--btn-height);
-  padding: 0 10px;
+  padding: 0;
   border: 0;
   border-radius: 12px;
   background: transparent;
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
-  align-items: stretch;
+  align-items: center;
   gap: 5px;
+  box-sizing: border-box;
 }
 
 .hamburger-btn:hover {
   background: var(--gray-50);
 }
 
+/* Três traços iguais: largura fixa para proporção clássica (não esticar à largura do botão). */
 .hamburger-btn span {
   display: block;
-  width: 100%;
+  width: 22px;
   height: 2px;
+  flex-shrink: 0;
   background: var(--text);
-  border-radius: 999px;
+  border-radius: 2px;
 }
 
 .menu-overlay {

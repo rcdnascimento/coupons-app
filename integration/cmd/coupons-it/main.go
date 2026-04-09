@@ -17,6 +17,7 @@ import (
 	"coupons.app/integration/internal/config"
 	"coupons.app/integration/internal/dbclean"
 	"coupons.app/integration/internal/flows"
+	"coupons.app/integration/internal/httpx"
 )
 
 func main() {
@@ -41,6 +42,7 @@ func main() {
 
 	cmd := args[0]
 	cfg := config.Load()
+	httpx.SetInternalAPIKey(cfg.InternalAPIKey)
 	ctx := context.Background()
 
 	if cmd == "help" || cmd == "-h" || cmd == "--help" {

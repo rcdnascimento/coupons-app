@@ -2,6 +2,7 @@ package com.coupons.bff.resource;
 
 import com.coupons.bff.infra.gateway.campaigns.CampaignsGateway;
 import com.coupons.bff.infra.gateway.profile.ProfileGateway;
+import com.coupons.bff.security.SecurityRequestSupport;
 import com.coupons.bff.infra.resource.dto.AddCouponToCampaignRequest;
 import com.coupons.bff.infra.resource.dto.CampaignCouponLinkResponse;
 import com.coupons.bff.infra.resource.dto.CampaignResponse;
@@ -16,6 +17,7 @@ import com.coupons.bff.infra.resource.dto.UserIdRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -86,15 +88,21 @@ public class CampaignsProxyResource {
 
     @PostMapping(value = "/{campaignId}/subscriptions", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void subscribe(@PathVariable String campaignId, @Valid @RequestBody UserIdRequest body) {
+    public void subscribe(
+            @PathVariable String campaignId, @RequestBody(required = false) UserIdRequest body) {
+        UUID userId = SecurityRequestSupport.requireUserId();
+        if (body == null) {
+            body = new UserIdRequest();
+        }
+        body.setUserId(userId);
         campaignsGateway.subscribe(campaignId, body);
     }
 
     @GetMapping(
             value = "/{campaignId}/subscriptions/me",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<MyCampaignSubscriptionResponse> mySubscription(
-            @PathVariable String campaignId, @RequestParam("userId") String userId) {
+    public ResponseEntity<MyCampaignSubscriptionResponse> mySubscription(@PathVariable String campaignId) {
+        String userId = SecurityRequestSupport.requireUserId().toString();
         return ResponseEntity.ok(campaignsGateway.mySubscription(campaignId, userId));
     }
 

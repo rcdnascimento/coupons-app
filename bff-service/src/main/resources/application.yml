@@ -1,12 +1,18 @@
 server:
   port: 8090
 
+# Mesmo segredo que auth-service (assinatura HMAC do JWT enviado ao browser).
+jwt:
+  secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
+
 spring:
   application:
     name: bff-service
 
 # URLs dos outros microsserviços (cada um é processo/JAR separado)
 coupons:
+  ingress:
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key-change-me}
   services:
     auth-url: http://localhost:8081
     profile-url: http://localhost:8082

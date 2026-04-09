@@ -6,7 +6,7 @@ import {
   getMeProfile,
   getMyCampaignSubscriptionStatus,
   listCampaigns,
-  listPrizesByUser,
+  listMyPrizes,
   subscribeCampaign,
   BFF_BASE_URL
 } from "../api";
@@ -22,7 +22,8 @@ import {
   isDistributionDrawAnimationPhase,
   isDistributionTimeReached,
   sleep,
-  sortCampaigns
+  sortCampaigns,
+  userHasAdminRole
 } from "../utils";
 import "./HomePage.css";
 
@@ -136,7 +137,7 @@ function CampaignSubscribedDistributionBlock({
 
       let didWin = false;
       try {
-        const prizes = await listPrizesByUser(userId, campaignId, { silent: true });
+        const prizes = await listMyPrizes(campaignId, { silent: true });
         const arr = Array.isArray(prizes) ? prizes : [];
         didWin = arr.some((p) => String(p.campaignId) === String(campaignId));
         setWon(didWin);
@@ -273,9 +274,9 @@ export default function HomePage() {
   const pollingCampaignsRef = useRef(new Set());
 
   const reloadBalance = useCallback(async () => {
-    const bal = await getMeBalance(auth.userId).catch(() => null);
+    const bal = await getMeBalance().catch(() => null);
     setBalance(bal?.balance ?? null);
-  }, [auth.userId]);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setTick((v) => v + 1), 1000);
@@ -302,14 +303,14 @@ export default function HomePage() {
           await sleep(POLL_INTERVAL_MS);
           let status;
           try {
-            const r = await getMyCampaignSubscriptionStatus(campaignId, auth.userId, { silent: true });
+            const r = await getMyCampaignSubscriptionStatus(campaignId, { silent: true });
             status = r?.status;
           } catch {
             continue;
           }
           if (status === "ACTIVE") {
             onSubscribe(campaignId);
-            const bal = await getMeBalance(auth.userId).catch(() => null);
+            const bal = await getMeBalance().catch(() => null);
             setBalance(bal?.balance ?? null);
             return;
           }
@@ -326,7 +327,7 @@ export default function HomePage() {
         setCampaignProcessing(campaignId, false);
       }
     },
-    [auth.userId, notifyError, onSubscribe, setCampaignProcessing]
+    [notifyError, onSubscribe, setCampaignProcessing]
   );
 
   async function loadData() {
@@ -334,13 +335,12 @@ export default function HomePage() {
       setLoading(true);
       const [camps, bal] = await Promise.all([
         listCampaigns(),
-        getMeBalance(auth.userId).catch(() => null)
+        getMeBalance().catch(() => null)
       ]);
       const sorted = sortCampaigns(camps).filter((c) => isCampaignVisibleInList(c));
       setCampaigns(sorted);
       setBalance(bal?.balance ?? null);
       const profileOut = await getMeProfile({
-        userId: auth.userId,
         name: auth.name,
         email: auth.email
       }).catch(() => null);
@@ -350,7 +350,7 @@ export default function HomePage() {
         const pairs = await Promise.all(
           sorted.map(async (c) => {
             try {
-              const r = await getMyCampaignSubscriptionStatus(c.id, auth.userId, { silent: true });
+              const r = await getMyCampaignSubscriptionStatus(c.id, { silent: true });
               return [c.id, r?.status];
             } catch {
               return [c.id, null];
@@ -416,7 +416,7 @@ export default function HomePage() {
   async function subscribe(campaignId) {
     const msgProcessamento = "inscrição em processamento";
     try {
-      await subscribeCampaign(campaignId, auth.userId);
+      await subscribeCampaign(campaignId);
     } catch (err) {
       const m = (err && err.message) || "";
       if (m.toLowerCase().includes(msgProcessamento)) {
@@ -495,13 +495,15 @@ export default function HomePage() {
               </button>
             </div>
             <div className="menu-panel__actions">
-              <Link
-                className="menu-item menu-item--link"
-                to="/admin"
-                onClick={() => setMenuOpen(false)}
-              >
-                Painel admin
-              </Link>
+              {userHasAdminRole(auth) ? (
+                <Link
+                  className="menu-item menu-item--link"
+                  to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Painel admin
+                </Link>
+              ) : null}
               <button type="button" className="menu-item" onClick={shareReferralLink}>
                 Compartilhar link de indicação
               </button>

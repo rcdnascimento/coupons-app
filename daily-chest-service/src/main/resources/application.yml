@@ -23,6 +23,9 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 coupons:
+  ingress:
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key-change-me}
+    jwt-secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
   profile:
     base-url: ${PROFILE_SERVICE_BASE_URL:http://localhost:8082}
   kafka:

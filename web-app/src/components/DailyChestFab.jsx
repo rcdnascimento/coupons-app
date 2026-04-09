@@ -26,7 +26,7 @@ export default function DailyChestFab({ userId }) {
   async function loadToday(silent = true) {
     try {
       setLoading(true);
-      const data = await getDailyChestToday(userId, { silent });
+      const data = await getDailyChestToday({ silent });
       setToday(data);
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export default function DailyChestFab({ userId }) {
 
     const animMs = 1500 + Math.floor(Math.random() * 1000);
     try {
-      const [result] = await Promise.all([openDailyChest(userId), sleep(animMs)]);
+      const [result] = await Promise.all([openDailyChest(), sleep(animMs)]);
       setToday(result);
       setShowResult(true);
       window.dispatchEvent(new CustomEvent("coupons:balance-refresh"));

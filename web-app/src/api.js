@@ -1,3 +1,5 @@
+import { loadAuth, saveAuth } from "./session";
+
 function resolveBffBaseUrl() {
   const fromEnv = import.meta.env.VITE_BFF_URL;
   if (fromEnv) return fromEnv;
@@ -18,24 +20,55 @@ export function setApiNotificationHandlers(handlers) {
   apiOnError = handlers?.onError ?? null;
 }
 
-function stripSilent(options) {
-  const { silent, ...rest } = options;
-  return { silent: silent === true, fetchOpts: rest };
+function parseRequestOptions(options = {}) {
+  const { silent, skipAuth, ...fetchOpts } = options;
+  return {
+    silent: silent === true,
+    skipAuth: skipAuth === true,
+    fetchOpts
+  };
+}
+
+/** Cabeçalho Bearer a partir da sessão (login/registo não devem usar token antigo). */
+function bearerHeaders() {
+  const token = loadAuth()?.token;
+  if (!token || typeof token !== "string") return {};
+  return { Authorization: `Bearer ${token.trim()}` };
+}
+
+function handleSessionExpired() {
+  saveAuth(null);
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname || "";
+  if (!path.endsWith("/login") && !path.endsWith("/register")) {
+    window.location.assign("/login");
+  }
 }
 
 async function requestJson(url, options = {}) {
-  const { silent, fetchOpts } = stripSilent(options);
+  const { silent, skipAuth, fetchOpts } = parseRequestOptions(options);
+  const headers = {
+    ...(fetchOpts.body !== undefined && fetchOpts.body !== null
+      ? { "Content-Type": "application/json" }
+      : {}),
+    ...(!skipAuth ? bearerHeaders() : {}),
+    ...(fetchOpts.headers || {})
+  };
   let resp;
   try {
     resp = await fetch(url, {
-      headers: { "Content-Type": "application/json", ...(fetchOpts.headers || {}) },
-      ...fetchOpts
+      ...fetchOpts,
+      headers
     });
   } catch (err) {
     if (err?.name === "AbortError") throw err;
     const msg = "Não foi possível ligar ao servidor. Verifique a rede ou tente mais tarde.";
     if (!silent) apiOnError?.(msg);
     throw new Error(msg);
+  }
+
+  if (resp.status === 401 && !skipAuth) {
+    handleSessionExpired();
   }
 
   if (!resp.ok) {
@@ -58,7 +91,8 @@ export async function register(payload) {
   return requestJson(`${BFF_BASE_URL}/api/auth/register`, {
     method: "POST",
     body: JSON.stringify(payload),
-    silent: true
+    silent: true,
+    skipAuth: true
   });
 }
 
@@ -66,7 +100,8 @@ export async function login(payload) {
   return requestJson(`${BFF_BASE_URL}/api/auth/login`, {
     method: "POST",
     body: JSON.stringify(payload),
-    silent: true
+    silent: true,
+    skipAuth: true
   });
 }
 
@@ -74,54 +109,54 @@ export async function listCampaigns() {
   return requestJson(`${BFF_BASE_URL}/api/campaigns`);
 }
 
-export async function subscribeCampaign(campaignId, userId, options = {}) {
+export async function subscribeCampaign(campaignId, options = {}) {
   return requestJson(`${BFF_BASE_URL}/api/campaigns/${campaignId}/subscriptions`, {
     method: "POST",
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify({}),
     ...options
   });
 }
 
 /** Estado: NONE | PROCESSING | ACTIVE | PAYMENT_FAILED */
-export async function getMyCampaignSubscriptionStatus(campaignId, userId, options = {}) {
+export async function getMyCampaignSubscriptionStatus(campaignId, options = {}) {
   return requestJson(
-    `${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}/subscriptions/me?userId=${encodeURIComponent(userId)}`,
+    `${BFF_BASE_URL}/api/campaigns/${encodeURIComponent(campaignId)}/subscriptions/me`,
     { method: "GET", ...options }
   );
 }
 
-export async function listPrizesByUser(userId, campaignId, options = {}) {
+/** Prémios do utilizador autenticado (JWT). */
+export async function listMyPrizes(campaignId, options = {}) {
   const suffix = campaignId ? `?campaignId=${encodeURIComponent(campaignId)}` : "";
-  return requestJson(`${BFF_BASE_URL}/api/prizes/users/${userId}${suffix}`, {
+  return requestJson(`${BFF_BASE_URL}/api/prizes/me${suffix}`, {
     method: "GET",
     ...options
   });
 }
 
-export async function getMeBalance(userId) {
-  return requestJson(`${BFF_BASE_URL}/api/me/balance?userId=${encodeURIComponent(userId)}`);
+export async function getMeBalance(options = {}) {
+  return requestJson(`${BFF_BASE_URL}/api/me/balance`, { method: "GET", ...options });
 }
 
-export async function getDailyChestToday(userId, options = {}) {
-  return requestJson(
-    `${BFF_BASE_URL}/api/daily-chest/today?userId=${encodeURIComponent(userId)}`,
-    { method: "GET", ...options }
-  );
+export async function getDailyChestToday(options = {}) {
+  return requestJson(`${BFF_BASE_URL}/api/daily-chest/today`, { method: "GET", ...options });
 }
 
-export async function openDailyChest(userId, options = {}) {
+export async function openDailyChest(options = {}) {
   return requestJson(`${BFF_BASE_URL}/api/daily-chest/open`, {
     method: "POST",
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify({}),
     ...options
   });
 }
 
-export async function getMeProfile({ userId, name, email }) {
-  const q = new URLSearchParams({ userId });
+export async function getMeProfile({ name, email } = {}, options = {}) {
+  const q = new URLSearchParams();
   if (name) q.set("name", name);
   if (email) q.set("email", email);
-  return requestJson(`${BFF_BASE_URL}/api/me/profile?${q.toString()}`);
+  const qs = q.toString();
+  const path = qs ? `${BFF_BASE_URL}/api/me/profile?${qs}` : `${BFF_BASE_URL}/api/me/profile`;
+  return requestJson(path, { method: "GET", ...options });
 }
 
 export async function getCampaignSummary(campaignId) {
@@ -156,8 +191,12 @@ export async function uploadAdminImage(file) {
   form.append("file", file);
   const resp = await fetch(`${BFF_BASE_URL}/api/uploads/images`, {
     method: "POST",
-    body: form
+    body: form,
+    headers: bearerHeaders()
   });
+  if (resp.status === 401) {
+    handleSessionExpired();
+  }
   if (!resp.ok) {
     let msg = `Erro HTTP ${resp.status}`;
     try {

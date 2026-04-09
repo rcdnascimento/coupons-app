@@ -25,6 +25,9 @@ spring:
 coupons:
   kafka:
     topic-referral-bonus-granted: ${KAFKA_TOPIC_REFERRAL_BONUS_GRANTED:referral.bonus.granted}
+  ingress:
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key-change-me}
+    jwt-secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
 
 management:
   endpoints:

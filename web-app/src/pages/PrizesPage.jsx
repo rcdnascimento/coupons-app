@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
-import { BFF_BASE_URL, listPrizesByUser } from "../api";
+import { BFF_BASE_URL, listMyPrizes } from "../api";
 import "./PrizesPage.css";
 
 function resolveMediaUrl(pathLike) {
@@ -54,10 +54,7 @@ export default function PrizesPage() {
       try {
         setLoading(true);
         setLoadFailed(false);
-        const prizes = await listPrizesByUser(
-          auth.userId,
-          filterCampaignId || undefined
-        );
+        const prizes = await listMyPrizes(filterCampaignId || undefined);
         setItems(Array.isArray(prizes) ? prizes : []);
       } catch {
         setLoadFailed(true);

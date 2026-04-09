@@ -11,11 +11,25 @@ import (
 
 var client = &http.Client{Timeout: 60 * time.Second}
 
+// internalAPIKey — definido por SetInternalAPIKey (mesmo valor que INTERNAL_API_KEY nos serviços).
+var internalAPIKey string
+
+func SetInternalAPIKey(key string) {
+	internalAPIKey = key
+}
+
+func applyIngressHeaders(req *http.Request) {
+	if internalAPIKey != "" {
+		req.Header.Set("X-Internal-Api-Key", internalAPIKey)
+	}
+}
+
 func GetJSON(url string, out any) (int, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return 0, err
 	}
+	applyIngressHeaders(req)
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, err
@@ -43,6 +57,7 @@ func PostJSON(url string, payload any, out any) (int, []byte, error) {
 		return 0, nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	applyIngressHeaders(req)
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, nil, err

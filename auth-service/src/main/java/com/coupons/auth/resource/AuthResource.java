@@ -40,14 +40,14 @@ public class AuthResource {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         User user = authRegistrationService.register(authRestMapper.toUser(request), request.getPassword());
-        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());
+        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole());
         return authRestMapper.toAuthResponse(user, token);
     }
 
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         User user = authLoginService.authenticate(request.getEmail(), request.getPassword());
-        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());
+        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole());
         return authRestMapper.toAuthResponse(user, token);
     }
 }

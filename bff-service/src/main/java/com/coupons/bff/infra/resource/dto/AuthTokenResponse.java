@@ -1,5 +1,6 @@
 package com.coupons.bff.infra.resource.dto;
 
+import java.util.List;
 import java.util.UUID;
 
 public class AuthTokenResponse {
@@ -7,6 +8,7 @@ public class AuthTokenResponse {
     private UUID userId;
     private String email;
     private String name;
+    private List<String> roles;
 
     public String getToken() {
         return token;
@@ -38,5 +40,13 @@ public class AuthTokenResponse {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 }

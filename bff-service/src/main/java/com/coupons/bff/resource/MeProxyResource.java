@@ -5,18 +5,16 @@ import com.coupons.bff.infra.gateway.profile.ProfileGateway;
 import com.coupons.bff.infra.resource.dto.BalanceResponse;
 import com.coupons.bff.infra.resource.dto.MeProfileResponse;
 import com.coupons.bff.infra.resource.dto.ProfileResponse;
+import com.coupons.bff.security.SecurityRequestSupport;
 import java.util.UUID;
-import javax.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Validated
 @RequestMapping("/api/me")
 public class MeProxyResource {
 
@@ -30,9 +28,8 @@ public class MeProxyResource {
 
     @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<MeProfileResponse> profile(
-            @RequestParam @NotNull UUID userId,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String email) {
+            @RequestParam(required = false) String name, @RequestParam(required = false) String email) {
+        UUID userId = SecurityRequestSupport.requireUserId();
         ProfileResponse profile = profileGateway.getByUserId(userId.toString());
         MeProfileResponse out = new MeProfileResponse();
         out.setUserId(profile.getUserId());
@@ -43,7 +40,8 @@ public class MeProxyResource {
     }
 
     @GetMapping(value = "/balance", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BalanceResponse> balance(@RequestParam @NotNull UUID userId) {
+    public ResponseEntity<BalanceResponse> balance() {
+        UUID userId = SecurityRequestSupport.requireUserId();
         return ResponseEntity.ok(ledgerGateway.getBalance(userId.toString()));
     }
 }

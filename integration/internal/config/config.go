@@ -13,6 +13,8 @@ type Config struct {
 	CampaignsService string
 	LedgerService    string
 	PrizesService    string
+	// Chave alinhada a coupons.ingress.internal-api-key nos microsserviços (pedidos diretos em IT).
+	InternalAPIKey string
 
 	MySQLHost     string
 	MySQLPort     string
@@ -35,6 +37,7 @@ func Load() Config {
 		CampaignsService: getenv("CAMPAIGNS_SERVICE_URL", "http://localhost:8083"),
 		LedgerService:    getenv("LEDGER_SERVICE_URL", "http://localhost:8084"),
 		PrizesService:    getenv("PRIZES_SERVICE_URL", "http://localhost:8085"),
+		InternalAPIKey:   getenv("INTERNAL_API_KEY", "dev-internal-api-key-change-me"),
 
 		MySQLHost:     getenv("MYSQL_HOST", "127.0.0.1"),
 		MySQLPort:     getenv("MYSQL_PORT", "3307"),

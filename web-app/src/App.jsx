@@ -11,6 +11,14 @@ import LoginPage from "./pages/LoginPage";
 import PrizesPage from "./pages/PrizesPage";
 import RegisterPage from "./pages/RegisterPage";
 import { loadAuth, loadSubscriptions, saveAuth, saveSubscriptions } from "./session";
+import { userHasAdminRole } from "./utils";
+
+function AdminRouteGate({ auth }) {
+  if (!userHasAdminRole(auth)) {
+    return <Navigate to="/" replace />;
+  }
+  return <AdminPage />;
+}
 
 export default function App() {
   const [auth, setAuth] = useState(() => loadAuth());
@@ -67,7 +75,7 @@ export default function App() {
           <Route path="campanhas/:campaignId" element={<CampaignPage />} />
           <Route path="premios" element={<PrizesPage />} />
           <Route path="conta" element={<AccountPage />} />
-          <Route path="admin" element={<AdminPage />} />
+          <Route path="admin" element={<AdminRouteGate auth={auth} />} />
         </Route>
         <Route path="*" element={<Navigate to={auth ? "/" : "/login"} replace />} />
         </Routes>

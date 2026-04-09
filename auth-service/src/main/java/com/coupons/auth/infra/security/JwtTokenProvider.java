@@ -7,8 +7,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import com.coupons.auth.domain.entity.UserRole;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -36,13 +39,18 @@ public class JwtTokenProvider {
         }
     }
 
-    public String createToken(UUID userId, String email) {
+    public String createToken(UUID userId, String email, UserRole role) {
         Instant now = Instant.now();
         Date issuedAt = Date.from(now);
         Date expiration = Date.from(now.plus(validity));
+        List<String> roles =
+                role == null
+                        ? Collections.singletonList(UserRole.USER.name())
+                        : Collections.singletonList(role.name());
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .claim("roles", roles)
                 .issuedAt(issuedAt)
                 .expiration(expiration)
                 .signWith(signingKey)

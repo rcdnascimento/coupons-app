@@ -18,8 +18,17 @@ public class ProfileGatewayImpl implements ProfileGateway {
 
     public ProfileGatewayImpl(
             RestTemplateBuilder restTemplateBuilder,
-            @Value("${coupons.profile.base-url:http://localhost:8082}") String profileBaseUrl) {
-        this.restTemplate = restTemplateBuilder.build();
+            @Value("${coupons.profile.base-url:http://localhost:8082}") String profileBaseUrl,
+            @Value("${coupons.ingress.internal-api-key:}") String internalApiKey) {
+        RestTemplateBuilder b = restTemplateBuilder;
+        if (internalApiKey != null && !internalApiKey.isBlank()) {
+            b = b.additionalInterceptors(
+                    (request, body, execution) -> {
+                        request.getHeaders().set("X-Internal-Api-Key", internalApiKey);
+                        return execution.execute(request, body);
+                    });
+        }
+        this.restTemplate = b.build();
         this.profileBaseUrl = profileBaseUrl;
     }
 

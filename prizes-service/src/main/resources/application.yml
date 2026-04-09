@@ -25,6 +25,9 @@ spring:
       enable-auto-commit: true
 
 coupons:
+  ingress:
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key-change-me}
+    jwt-secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
   kafka:
     topic-prize-distribution-request: ${KAFKA_TOPIC_PRIZE_DISTRIBUTION_REQUEST:prize.distribution.request}
     consumer-group: ${KAFKA_CONSUMER_GROUP_PRIZES:prizes-service}

@@ -229,3 +229,10 @@ export function distributionScheduleLabel(iso) {
   const timeStr = mins === 0 ? `${h}h` : `${h}h${String(mins).padStart(2, "0")}`;
   return `Acontecerá em ${day}/${month} às ${timeStr}.`;
 }
+
+/** Sessão com papel ADMIN (array `roles` da resposta de login / JWT). */
+export function userHasAdminRole(auth) {
+  const r = auth?.roles;
+  if (!Array.isArray(r)) return false;
+  return r.some((x) => String(x).toUpperCase() === "ADMIN");
+}

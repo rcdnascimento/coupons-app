@@ -21,7 +21,15 @@ jwt:
   secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
   expiration-hours: ${JWT_EXPIRATION_HOURS:24}
 
+# E-mails (separados por vírgula) que recebem papel ADMIN ao arrancar, se a conta já existir.
+auth:
+  bootstrap-admin-emails: ${AUTH_BOOTSTRAP_ADMIN_EMAILS:}
+
 coupons:
+  ingress:
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key-change-me}
+    jwt-secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
+    allow-public-auth-register-and-login: true
   services:
     profile-url: ${PROFILE_SERVICE_URL:http://localhost:8082}
 

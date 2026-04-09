@@ -28,6 +28,9 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 coupons:
+  ingress:
+    internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key-change-me}
+    jwt-secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
   kafka:
     consumer-group: ${KAFKA_CONSUMER_GROUP_LEDGER:ledger-service}
     topic-campaign-subscription-debit-request: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST:campaign.subscription.debit.request}

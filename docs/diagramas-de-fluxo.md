@@ -286,4 +286,92 @@ flowchart LR
 
 ---
 
-*Diagramas alinhados ao código atual (Resource + RestMapper, Kafka para subscrição/débito, indicação no registo, Baú da Sorte diário com crédito assíncrono no ledger, e FAB no frontend autenticado).*
+## 10) Autenticação e autorização (web-app → BFF → auth-service)
+
+**Princípio:** o **browser** fala só com o **BFF**. O JWT é emitido pelo **auth-service** e **validado no BFF** (mesma chave HMAC `JWT_SECRET`). O `userId` em operações “minhas” vem do **`sub` do token**, não de parâmetros confiáveis do cliente.
+
+### 10.1) Login e uso do token no frontend
+
+```mermaid
+sequenceDiagram
+  participant W as web-app
+  participant B as bff-service
+  participant A as auth-service
+
+  W->>B: POST /api/auth/register ou /api/auth/login (sem Bearer)
+  B->>A: POST /v1/auth/register ou /v1/auth/login
+  A->>A: User + role (USER por defeito; ADMIN na BD)
+  A-->>B: AuthResponse (token, userId, email, name, roles[])
+  B-->>W: AuthTokenResponse (mesmo formato)
+
+  Note over W: localStorage: token + userId + roles (UI)
+
+  W->>B: GET /api/me/balance (Authorization: Bearer JWT)
+  B->>B: filtro JWT — assinatura, exp, claims
+  alt token válido
+    B->>B: SecurityContext com userId = sub + ROLE_*
+    B->>B: MeProxyResource usa utilizador autenticado
+    B-->>W: 200
+  else sem token / inválido / expirado
+    B-->>W: 401 Não autenticado
+  end
+```
+
+### 10.2) Classificação das rotas no BFF (política)
+
+```mermaid
+flowchart TB
+  REQ[Pedido HTTP ao BFF]
+  F[JwtAuthenticationFilter]
+  ANON[Rotas permitAll — anónimo OK]
+  AUTH[authenticated — utilizador com JWT válido]
+  ADM[hasRole ADMIN]
+  E401[401 token inválido ou ausente onde obrigatório]
+  E403[403 sem permissão]
+
+  REQ --> F
+  F -->|Bearer presente e válido| CTX[SecurityContext: userId + authorities]
+  F -->|Bearer inválido| E401
+  CTX --> DEC{authorizeRequests}
+  DEC --> ANON
+  DEC --> AUTH
+  DEC --> ADM
+  AUTH -->|acesso a rota só ADMIN| E403
+
+  subgraph public [Públicas — exemplos]
+    P1["POST /api/auth/register e login"]
+    P2["GET /api/campaigns, /{id}, /summary, /winners"]
+    P3["GET /api/uploads/images/*"]
+  end
+
+  subgraph userR [Utilizador autenticado — exemplos]
+    U1["/api/me/* , daily-chest/*"]
+    U2["POST /api/campaigns/{id}/subscriptions"]
+    U3["GET …/subscriptions/me , GET /api/prizes/me"]
+  end
+
+  subgraph adminR [Só ADMIN — exemplos]
+    A1["POST ou PATCH /api/campaigns e cupons na campanha"]
+    A2["/api/coupons , /companies , POST /uploads"]
+    A3["/api/admin/*"]
+  end
+
+  ANON -.-> public
+  AUTH -.-> userR
+  ADM -.-> adminR
+```
+
+### 10.3) Conteúdo do JWT (auth-service)
+
+| Claim / campo | Uso |
+|---------------|-----|
+| `sub` | UUID do utilizador (fonte de verdade no BFF) |
+| `email` | E-mail |
+| `roles` | Lista com `USER` e/ou `ADMIN` (Spring usa `ROLE_USER`, `ROLE_ADMIN`) |
+| `exp` / `iat` | Validade e emissão |
+
+**Bootstrap de admin:** variável `AUTH_BOOTSTRAP_ADMIN_EMAILS` (auth-service) promove contas existentes a `ADMIN` ao arranque; na BD a coluna `users.role` guarda `USER` ou `ADMIN`.
+
+---
+
+*Diagramas alinhados ao código atual (Resource + RestMapper, Kafka para subscrição/débito, indicação no registo, Baú da Sorte diário com crédito assíncrono no ledger, FAB no frontend autenticado, e JWT + roles no BFF).*

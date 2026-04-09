@@ -3,6 +3,7 @@ package com.coupons.bff.resource;
 import com.coupons.bff.domain.service.PrizeDeliveryEnrichmentService;
 import com.coupons.bff.infra.gateway.prizes.PrizesGateway;
 import com.coupons.bff.infra.resource.dto.PrizeDeliveryResponse;
+import com.coupons.bff.security.SecurityRequestSupport;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +26,9 @@ public class PrizesProxyResource {
         this.prizeDeliveryEnrichmentService = prizeDeliveryEnrichmentService;
     }
 
-    @GetMapping(value = "/users/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<PrizeDeliveryResponse>> byUser(
-            @PathVariable String userId, @RequestParam(required = false) String campaignId) {
+    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<PrizeDeliveryResponse>> myPrizes(@RequestParam(required = false) String campaignId) {
+        String userId = SecurityRequestSupport.requireUserId().toString();
         List<PrizeDeliveryResponse> raw = prizesGateway.prizesByUser(userId, campaignId);
         return ResponseEntity.ok(prizeDeliveryEnrichmentService.enrich(raw));
     }
