@@ -1,4 +1,9 @@
 services:
+
+  # ─────────────────────────────────────────────
+  #  INFRAESTRUTURA
+  # ─────────────────────────────────────────────
+
   mysql:
     image: mysql:8.0
     container_name: coupons-mysql
@@ -17,6 +22,7 @@ services:
       CAMPAIGNS_DB_PASSWORD: ${CAMPAIGNS_DB_PASSWORD:-campaigns_dev_change_me}
       LEDGER_DB_PASSWORD: ${LEDGER_DB_PASSWORD:-ledger_dev_change_me}
       PRIZES_DB_PASSWORD: ${PRIZES_DB_PASSWORD:-prizes_dev_change_me}
+      DAILY_CHEST_DB_PASSWORD: ${DAILY_CHEST_DB_PASSWORD:-daily_chest_dev_change_me}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
@@ -26,6 +32,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    networks:
+      - coupons-net
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
@@ -36,6 +44,8 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - coupons-net
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
@@ -61,6 +71,8 @@ services:
       timeout: 10s
       retries: 10
       start_period: 40s
+    networks:
+      - coupons-net
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -74,6 +86,272 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: coupons-local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - coupons-net
+
+  # ─────────────────────────────────────────────
+  #  MICROSSERVIÇOS
+  # ─────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    image: coupons/auth-service:latest
+    container_name: coupons-auth-service
+    restart: unless-stopped
+    ports:
+      - "${AUTH_SERVICE_PORT:-8081}:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: auth_svc
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD:-auth_dev_change_me}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      PROFILE_SERVICE_URL: http://profile-service:8082
+      AUTH_BOOTSTRAP_ADMIN_EMAILS: ${AUTH_BOOTSTRAP_ADMIN_EMAILS:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - coupons-net
+
+  profile-service:
+    build:
+      context: ./profile-service
+      dockerfile: Dockerfile
+    image: coupons/profile-service:latest
+    container_name: coupons-profile-service
+    restart: unless-stopped
+    ports:
+      - "${PROFILE_SERVICE_PORT:-8082}:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/profile?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: profile_svc
+      SPRING_DATASOURCE_PASSWORD: ${PROFILE_DB_PASSWORD:-profile_dev_change_me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      KAFKA_TOPIC_REFERRAL_BONUS_GRANTED: ${KAFKA_TOPIC_REFERRAL_BONUS_GRANTED:-referral.bonus.granted}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - coupons-net
+
+  campaigns-service:
+    build:
+      context: ./campaigns-service
+      dockerfile: Dockerfile
+    image: coupons/campaigns-service:latest
+    container_name: coupons-campaigns-service
+    restart: unless-stopped
+    ports:
+      - "${CAMPAIGNS_SERVICE_PORT:-8083}:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/campaigns?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: campaigns_svc
+      SPRING_DATASOURCE_PASSWORD: ${CAMPAIGNS_DB_PASSWORD:-campaigns_dev_change_me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      PRIZES_SERVICE_URL: http://prizes-service:8085
+      KAFKA_CONSUMER_GROUP_CAMPAIGNS: ${KAFKA_CONSUMER_GROUP_CAMPAIGNS:-campaigns-service}
+      KAFKA_TOPIC_PRIZE_DISTRIBUTION_REQUEST: ${KAFKA_TOPIC_PRIZE_DISTRIBUTION_REQUEST:-prize.distribution.request}
+      KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST:-campaign.subscription.debit.request}
+      KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED:-campaign.subscription.payment.succeeded}
+      KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED:-campaign.subscription.payment.failed}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - coupons-net
+
+  ledger-service:
+    build:
+      context: ./ledger-service
+      dockerfile: Dockerfile
+    image: coupons/ledger-service:latest
+    container_name: coupons-ledger-service
+    restart: unless-stopped
+    ports:
+      - "${LEDGER_SERVICE_PORT:-8084}:8084"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ledger?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ledger_svc
+      SPRING_DATASOURCE_PASSWORD: ${LEDGER_DB_PASSWORD:-ledger_dev_change_me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      KAFKA_CONSUMER_GROUP_LEDGER: ${KAFKA_CONSUMER_GROUP_LEDGER:-ledger-service}
+      KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST:-campaign.subscription.debit.request}
+      KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED:-campaign.subscription.payment.succeeded}
+      KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED:-campaign.subscription.payment.failed}
+      KAFKA_TOPIC_REFERRAL_BONUS_GRANTED: ${KAFKA_TOPIC_REFERRAL_BONUS_GRANTED:-referral.bonus.granted}
+      KAFKA_TOPIC_CHEST_BONUS_GRANTED: ${KAFKA_TOPIC_CHEST_BONUS_GRANTED:-chest.bonus.granted}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - coupons-net
+
+  prizes-service:
+    build:
+      context: ./prizes-service
+      dockerfile: Dockerfile
+    image: coupons/prizes-service:latest
+    container_name: coupons-prizes-service
+    restart: unless-stopped
+    ports:
+      - "${PRIZES_SERVICE_PORT:-8085}:8085"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/prizes?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: prizes_svc
+      SPRING_DATASOURCE_PASSWORD: ${PRIZES_DB_PASSWORD:-prizes_dev_change_me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      KAFKA_TOPIC_PRIZE_DISTRIBUTION_REQUEST: ${KAFKA_TOPIC_PRIZE_DISTRIBUTION_REQUEST:-prize.distribution.request}
+      KAFKA_CONSUMER_GROUP_PRIZES: ${KAFKA_CONSUMER_GROUP_PRIZES:-prizes-service}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - coupons-net
+
+  daily-chest-service:
+    build:
+      context: ./daily-chest-service
+      dockerfile: Dockerfile
+    image: coupons/daily-chest-service:latest
+    container_name: coupons-daily-chest-service
+    restart: unless-stopped
+    ports:
+      - "${DAILY_CHEST_SERVICE_PORT:-8086}:8086"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/daily_chest?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: daily_chest_svc
+      SPRING_DATASOURCE_PASSWORD: ${DAILY_CHEST_DB_PASSWORD:-daily_chest_dev_change_me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      PROFILE_SERVICE_BASE_URL: http://profile-service:8082
+      KAFKA_TOPIC_CHEST_BONUS_GRANTED: ${KAFKA_TOPIC_CHEST_BONUS_GRANTED:-chest.bonus.granted}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - coupons-net
+
+  bff-service:
+    build:
+      context: ./bff-service
+      dockerfile: Dockerfile
+    image: coupons/bff-service:latest
+    container_name: coupons-bff-service
+    restart: unless-stopped
+    ports:
+      - "${BFF_SERVICE_PORT:-8090}:8090"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      profile-service:
+        condition: service_healthy
+      campaigns-service:
+        condition: service_healthy
+      ledger-service:
+        condition: service_healthy
+      prizes-service:
+        condition: service_healthy
+      daily-chest-service:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
+      COUPONS_SERVICES_AUTH_URL: http://auth-service:8081
+      COUPONS_SERVICES_PROFILE_URL: http://profile-service:8082
+      COUPONS_SERVICES_CAMPAIGNS_URL: http://campaigns-service:8083
+      COUPONS_SERVICES_LEDGER_URL: http://ledger-service:8084
+      COUPONS_SERVICES_PRIZES_URL: http://prizes-service:8085
+      COUPONS_SERVICES_DAILY_CHEST_URL: http://daily-chest-service:8086
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8090/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - coupons-net
+
+  web-app:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile
+    image: coupons/web-app:latest
+    container_name: coupons-web-app
+    restart: unless-stopped
+    ports:
+      - "${WEB_APP_PORT:-3000}:3000"
+    depends_on:
+      bff-service:
+        condition: service_healthy
+    networks:
+      - coupons-net
+
+# ─────────────────────────────────────────────
+#  VOLUMES & NETWORKS
+# ─────────────────────────────────────────────
 
 volumes:
   mysql_data:
+
+networks:
+  coupons-net:
+    driver: bridge
