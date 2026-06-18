@@ -97,7 +97,7 @@ services:
     build:
       context: ./auth-service
       dockerfile: Dockerfile
-    image: coupons/auth-service:latest
+    image: gustavosouzaws/auth-service
     container_name: coupons-auth-service
     restart: unless-stopped
     ports:
@@ -127,7 +127,7 @@ services:
     build:
       context: ./profile-service
       dockerfile: Dockerfile
-    image: coupons/profile-service:latest
+    image: gustavosouzaws/profile-service
     container_name: coupons-profile-service
     restart: unless-stopped
     ports:
@@ -158,7 +158,7 @@ services:
     build:
       context: ./campaigns-service
       dockerfile: Dockerfile
-    image: coupons/campaigns-service:latest
+    image: gustavosouzaws/campaigns-service
     container_name: coupons-campaigns-service
     restart: unless-stopped
     ports:
@@ -194,7 +194,7 @@ services:
     build:
       context: ./ledger-service
       dockerfile: Dockerfile
-    image: coupons/ledger-service:latest
+    image: gustavosouzaws/ledger-service
     container_name: coupons-ledger-service
     restart: unless-stopped
     ports:
@@ -230,7 +230,7 @@ services:
     build:
       context: ./prizes-service
       dockerfile: Dockerfile
-    image: coupons/prizes-service:latest
+    image: gustavosouzaws/prizes-service
     container_name: coupons-prizes-service
     restart: unless-stopped
     ports:
@@ -262,7 +262,7 @@ services:
     build:
       context: ./daily-chest-service
       dockerfile: Dockerfile
-    image: coupons/daily-chest-service:latest
+    image: gustavosouzaws/daily-chest-service
     container_name: coupons-daily-chest-service
     restart: unless-stopped
     ports:
@@ -294,7 +294,7 @@ services:
     build:
       context: ./bff-service
       dockerfile: Dockerfile
-    image: coupons/bff-service:latest
+    image: gustavosouzaws/bff-service
     container_name: coupons-bff-service
     restart: unless-stopped
     ports:
@@ -334,7 +334,7 @@ services:
     build:
       context: ./web-app
       dockerfile: Dockerfile
-    image: coupons/web-app:latest
+    image: gustavosouzaws/web-app
     container_name: coupons-web-app
     restart: unless-stopped
     ports:
