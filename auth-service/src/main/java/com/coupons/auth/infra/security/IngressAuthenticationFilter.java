@@ -42,7 +42,7 @@ public class IngressAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         String uri = request.getRequestURI();
-        if (uri.startsWith("/actuator/health") || uri.startsWith("/actuator/info")) {
+        if (uri.startsWith("/actuator/health") || uri.startsWith("/actuator/info") || uri.startsWith("/actuator/prometheus")) {
             filterChain.doFilter(request, response);
             return;
         }

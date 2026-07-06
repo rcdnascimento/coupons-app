@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .permitAll()
                 .antMatchers("/error")
                 .permitAll()
-                .antMatchers("/actuator/health", "/actuator/info")
+                .antMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus")
                 .permitAll()
                 .antMatchers("/api/auth/**")
                 .permitAll()
