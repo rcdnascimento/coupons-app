@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'auth-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-service:8081']
+
+  - job_name: 'profile-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['profile-service:8082']
+
+  - job_name: 'campaigns-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['campaigns-service:8083']
+
+  - job_name: 'ledger-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ledger-service:8084']
+
+  - job_name: 'prizes-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['prizes-service:8085']
+
+  - job_name: 'daily-chest-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['daily-chest-service:8086']
+
+  - job_name: 'bff-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['bff-service:8090']

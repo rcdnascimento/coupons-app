@@ -25,7 +25,7 @@ services:
       DAILY_CHEST_DB_PASSWORD: ${DAILY_CHEST_DB_PASSWORD:-daily_chest_dev_change_me}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./observability/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
       interval: 5s
@@ -342,6 +342,46 @@ services:
     depends_on:
       bff-service:
         condition: service_healthy
+    networks:
+      - coupons-net
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: coupons-prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      profile-service:
+        condition: service_healthy
+      campaigns-service:
+        condition: service_healthy
+      ledger-service:
+        condition: service_healthy
+      prizes-service:
+        condition: service_healthy
+      daily-chest-service:
+        condition: service_healthy
+      bff-service:
+        condition: service_healthy
+    networks:
+      - coupons-net
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: coupons-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
     networks:
       - coupons-net
 
