@@ -20,7 +20,6 @@ export default function DailyChestFab({ userId }) {
   const [today, setToday] = useState(null);
   const [opening, setOpening] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [showResult, setShowResult] = useState(false);
   const [frameIndex, setFrameIndex] = useState(0);
 
   async function loadToday(silent = true) {
@@ -63,37 +62,45 @@ export default function DailyChestFab({ userId }) {
   const buttonChestImg = openedToday
     ? openedChestImg
     : (opening ? openingFrames : idleFrames)[frameIndex % (opening ? openingFrames.length : idleFrames.length)];
-  const modalChestImg = openedToday ? openedChestImg : (opening ? openingFrames : [closedChestImg])[frameIndex % (opening ? openingFrames.length : 1)];
+  const modalChestImg = openedToday
+    ? openedChestImg
+    : (opening ? openingFrames : [closedChestImg])[frameIndex % (opening ? openingFrames.length : 1)];
 
   async function handleOpenChest() {
     if (opening || openedToday) return;
     setModalOpen(true);
-    setShowResult(false);
     setOpening(true);
 
     const animMs = 1500 + Math.floor(Math.random() * 1000);
     try {
       const [result] = await Promise.all([openDailyChest(), sleep(animMs)]);
       setToday(result);
-      setShowResult(true);
       window.dispatchEvent(new CustomEvent("coupons:balance-refresh"));
     } finally {
       setOpening(false);
     }
   }
 
+  function handleFabClick() {
+    if (opening || loading) return;
+    if (openedToday) {
+      setModalOpen(true);
+      return;
+    }
+    handleOpenChest();
+  }
+
   if (!userId) return null;
-  if (openedToday && !modalOpen) return null;
 
   return (
     <>
       <button
         type="button"
-        className="daily-chest-fab daily-chest-fab--available"
-        onClick={handleOpenChest}
+        className={`daily-chest-fab${openedToday ? "" : " daily-chest-fab--available"}`}
+        onClick={handleFabClick}
         disabled={loading || opening}
-        aria-label="Abrir baú diário"
-        title="Abrir baú diário"
+        aria-label={openedToday ? "Ver prêmio do baú de hoje" : "Abrir baú diário"}
+        title={openedToday ? "Baú já aberto — ver prêmio" : "Abrir baú diário"}
       >
         <img className="daily-chest-fab__img" src={buttonChestImg} alt="" aria-hidden={true} />
       </button>
@@ -124,17 +131,15 @@ export default function DailyChestFab({ userId }) {
               </div>
             )}
 
-            {openedToday && !showResult && (
+            {openedToday && !opening && (
               <p className="daily-chest-modal__result">
-                <img className="daily-chest-modal__chest-img daily-chest-modal__chest-img--static" src={openedChestImg} alt="" aria-hidden={true} />
-                Você ganhou <strong>{rewardLabel(rewardCoins)}</strong>!
-              </p>
-            )}
-
-            {!opening && showResult && (
-              <p className="daily-chest-modal__result">
-                <img className="daily-chest-modal__chest-img daily-chest-modal__chest-img--static" src={openedChestImg} alt="" aria-hidden={true} />
-                Você ganhou <strong>{rewardLabel(rewardCoins)}</strong>!
+                <img
+                  className="daily-chest-modal__chest-img daily-chest-modal__chest-img--static"
+                  src={openedChestImg}
+                  alt=""
+                  aria-hidden={true}
+                />
+                Você ganhou <strong>{rewardLabel(rewardCoins)}</strong> hoje!
               </p>
             )}
           </div>

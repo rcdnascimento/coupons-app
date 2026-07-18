@@ -10,6 +10,10 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface CampaignRepository extends JpaRepository<Campaign, UUID> {
 
+    boolean existsByTitle(String title);
+
+    List<Campaign> findByCompanyIdOrderByCreatedAtAsc(UUID companyId);
+
     /**
      * ACTIVE primeiro (ainda em curso), depois por data de distribuição crescente.
      */

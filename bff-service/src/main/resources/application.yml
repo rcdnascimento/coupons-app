@@ -25,6 +25,10 @@ coupons:
     ledger-url: http://localhost:8084
     prizes-url: http://localhost:8085
     daily-chest-url: http://localhost:8086
+  uploads:
+    dir: ${COUPONS_UPLOADS_DIR:./uploads}
+  seed-uploads:
+    enabled: ${BFF_SEED_UPLOADS_ENABLED:true}
 
 management:
   endpoints:

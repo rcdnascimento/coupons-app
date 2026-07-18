@@ -48,6 +48,12 @@ coupons:
     max-dispatch-attempts: ${DISTRIBUTION_MAX_DISPATCH_ATTEMPTS:10}
     retry-batch-size: ${DISTRIBUTION_RETRY_BATCH_SIZE:200}
 
+# Seed de demo: empresas + campanha aberta (idempotente)
+campaigns:
+  demo-seed:
+    enabled: ${CAMPAIGNS_DEMO_SEED_ENABLED:true}
+    points-cost: ${CAMPAIGNS_DEMO_SEED_POINTS_COST:10}
+
 management:
   endpoints:
     web:

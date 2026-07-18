@@ -1,3 +1,12 @@
+x-otel-common: &otel-common
+  JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--javaagent:/otel/opentelemetry-javaagent.jar}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: none
+  OTEL_LOGS_EXPORTER: none
+  OTEL_INSTRUMENTATION_HTTP_SERVER_EXCLUDE_PATTERN: .*/actuator/.*
+
 services:
 
   # ─────────────────────────────────────────────
@@ -89,6 +98,20 @@ services:
     networks:
       - coupons-net
 
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: coupons-jaeger
+    restart: unless-stopped
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - coupons-net
+
   # ─────────────────────────────────────────────
   #  MICROSSERVIÇOS
   # ─────────────────────────────────────────────
@@ -103,9 +126,15 @@ services:
     ports:
       - "${AUTH_SERVICE_PORT:-8081}:8081"
     depends_on:
+      jaeger:
+        condition: service_started
       mysql:
         condition: service_healthy
+      profile-service:
+        condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: auth-service
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: auth_svc
       SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD:-auth_dev_change_me}
@@ -113,7 +142,12 @@ services:
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
       PROFILE_SERVICE_URL: http://profile-service:8082
+      AUTH_BOOTSTRAP_ADMIN_ENABLED: ${AUTH_BOOTSTRAP_ADMIN_ENABLED:-true}
+      AUTH_BOOTSTRAP_ADMIN_EMAIL: ${AUTH_BOOTSTRAP_ADMIN_EMAIL:-admin@coupons.local}
+      AUTH_BOOTSTRAP_ADMIN_PASSWORD: ${AUTH_BOOTSTRAP_ADMIN_PASSWORD:-admin123}
+      AUTH_BOOTSTRAP_ADMIN_NAME: ${AUTH_BOOTSTRAP_ADMIN_NAME:-Admin}
       AUTH_BOOTSTRAP_ADMIN_EMAILS: ${AUTH_BOOTSTRAP_ADMIN_EMAILS:-}
+      AUTH_BOOTSTRAP_DEMO_USERS_ENABLED: ${AUTH_BOOTSTRAP_DEMO_USERS_ENABLED:-true}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
       interval: 15s
@@ -133,11 +167,15 @@ services:
     ports:
       - "${PROFILE_SERVICE_PORT:-8082}:8082"
     depends_on:
+      jaeger:
+        condition: service_started
       mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: profile-service
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/profile?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: profile_svc
       SPRING_DATASOURCE_PASSWORD: ${PROFILE_DB_PASSWORD:-profile_dev_change_me}
@@ -164,11 +202,15 @@ services:
     ports:
       - "${CAMPAIGNS_SERVICE_PORT:-8083}:8083"
     depends_on:
+      jaeger:
+        condition: service_started
       mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: campaigns-service
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/campaigns?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: campaigns_svc
       SPRING_DATASOURCE_PASSWORD: ${CAMPAIGNS_DB_PASSWORD:-campaigns_dev_change_me}
@@ -181,6 +223,8 @@ services:
       KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_DEBIT_REQUEST:-campaign.subscription.debit.request}
       KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_SUCCEEDED:-campaign.subscription.payment.succeeded}
       KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED: ${KAFKA_TOPIC_CAMPAIGN_SUBSCRIPTION_PAYMENT_FAILED:-campaign.subscription.payment.failed}
+      CAMPAIGNS_DEMO_SEED_ENABLED: ${CAMPAIGNS_DEMO_SEED_ENABLED:-true}
+      CAMPAIGNS_DEMO_SEED_POINTS_COST: ${CAMPAIGNS_DEMO_SEED_POINTS_COST:-10}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
       interval: 15s
@@ -200,11 +244,15 @@ services:
     ports:
       - "${LEDGER_SERVICE_PORT:-8084}:8084"
     depends_on:
+      jaeger:
+        condition: service_started
       mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: ledger-service
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ledger?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: ledger_svc
       SPRING_DATASOURCE_PASSWORD: ${LEDGER_DB_PASSWORD:-ledger_dev_change_me}
@@ -236,11 +284,15 @@ services:
     ports:
       - "${PRIZES_SERVICE_PORT:-8085}:8085"
     depends_on:
+      jaeger:
+        condition: service_started
       mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: prizes-service
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/prizes?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: prizes_svc
       SPRING_DATASOURCE_PASSWORD: ${PRIZES_DB_PASSWORD:-prizes_dev_change_me}
@@ -268,11 +320,15 @@ services:
     ports:
       - "${DAILY_CHEST_SERVICE_PORT:-8086}:8086"
     depends_on:
+      jaeger:
+        condition: service_started
       mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: daily-chest-service
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/daily_chest?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: daily_chest_svc
       SPRING_DATASOURCE_PASSWORD: ${DAILY_CHEST_DB_PASSWORD:-daily_chest_dev_change_me}
@@ -300,6 +356,8 @@ services:
     ports:
       - "${BFF_SERVICE_PORT:-8090}:8090"
     depends_on:
+      jaeger:
+        condition: service_started
       auth-service:
         condition: service_healthy
       profile-service:
@@ -313,6 +371,8 @@ services:
       daily-chest-service:
         condition: service_healthy
     environment:
+      <<: *otel-common
+      OTEL_SERVICE_NAME: bff-service
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars-ok}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key-change-me}
       COUPONS_SERVICES_AUTH_URL: http://auth-service:8081

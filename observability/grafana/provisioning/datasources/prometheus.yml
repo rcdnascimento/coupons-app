@@ -7,3 +7,12 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: true
+
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: prometheus

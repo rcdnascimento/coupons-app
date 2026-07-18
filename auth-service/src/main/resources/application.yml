@@ -26,9 +26,16 @@ jwt:
   secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars-ok}
   expiration-hours: ${JWT_EXPIRATION_HOURS:24}
 
-# E-mails (separados por vírgula) que recebem papel ADMIN ao arrancar, se a conta já existir.
+# Seed de ADMIN no arranque (criação idempotente) + promoção de e-mails já existentes.
 auth:
+  bootstrap-admin:
+    enabled: ${AUTH_BOOTSTRAP_ADMIN_ENABLED:true}
+    email: ${AUTH_BOOTSTRAP_ADMIN_EMAIL:admin@coupons.local}
+    password: ${AUTH_BOOTSTRAP_ADMIN_PASSWORD:admin123}
+    name: ${AUTH_BOOTSTRAP_ADMIN_NAME:Admin}
   bootstrap-admin-emails: ${AUTH_BOOTSTRAP_ADMIN_EMAILS:}
+  bootstrap-demo-users:
+    enabled: ${AUTH_BOOTSTRAP_DEMO_USERS_ENABLED:true}
 
 coupons:
   ingress:

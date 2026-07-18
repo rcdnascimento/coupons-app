@@ -575,9 +575,15 @@ export default function HomePage() {
               const subscribed = !!subscriptions[c.id];
               const cost = pointsCostNumber(c);
               const insufficientFunds =
-                !loading && balance !== null && cost > 0 && balance < cost;
-              const balanceUnavailable = !loading && balance === null && cost > 0;
-              const blockForBalance = cost > 0 && (loading || balance === null || balance < cost);
+                !subscribed &&
+                !loading &&
+                balance !== null &&
+                cost > 0 &&
+                balance < cost;
+              const balanceUnavailable =
+                !subscribed && !loading && balance === null && cost > 0;
+              const blockForBalance =
+                !subscribed && cost > 0 && (loading || balance === null || balance < cost);
               const processing = !!processingByCampaign[c.id];
               const subscribeDisabled =
                 state !== "aberta" || blockForBalance || processing;
